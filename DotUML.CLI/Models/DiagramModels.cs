@@ -14,7 +14,7 @@ public record PropertyInfo(string Name, string Visibility, string Type)
     public string GetDiagramRepresentation() => $"        {VisibilityCharacter}{Name} : {Type}\n";
 }
 
-public record MethodInfo(string Name, string Visibility, string? ReturnType = "")
+public record MethodInfo(string Name, string Visibility, string ReturnType)
 {
     private char VisibilityCharacter => Visibility switch
     {
@@ -25,7 +25,7 @@ public record MethodInfo(string Name, string Visibility, string? ReturnType = ""
     };
     public string GetDiagramRepresentation()
     {
-        if (string.IsNullOrEmpty(ReturnType))
+        if (ReturnType.Contains("void"))
         {
             return $"        {VisibilityCharacter}{Name}()\n";
         }

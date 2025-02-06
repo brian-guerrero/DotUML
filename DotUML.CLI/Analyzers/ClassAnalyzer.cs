@@ -92,12 +92,13 @@ public class ClassAnalyzer
                 }
             }
             AnalyzePropertiesForObjectInfo(classNode.Members, classInfo!);
+            AnalyzeMethodsForObjectInfo(classNode.Members, classInfo!);
             objectInfos.Add(classInfo!);
 
         }
     }
 
-    private static void AnalyzePropertiesForObjectInfo(SyntaxList<Microsoft.CodeAnalysis.CSharp.Syntax.MemberDeclarationSyntax> members, ObjectInfo classInfo)
+    private static void AnalyzePropertiesForObjectInfo(SyntaxList<Microsoft.CodeAnalysis.CSharp.Syntax.MemberDeclarationSyntax> members, ObjectInfo objectInformation)
     {
         var properties = members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax>();
         foreach (var property in properties)
@@ -107,7 +108,21 @@ public class ClassAnalyzer
             var propertyType = property.Type.ToString();
             var accessibility = property.Modifiers.ToString();
             Console.WriteLine($"Property accessibility: {accessibility}");
-            classInfo!.AddProperty(new PropertyInfo(propertyName, accessibility, propertyType));
+            objectInformation.AddProperty(new PropertyInfo(propertyName, accessibility, propertyType));
+        }
+    }
+
+    private static void AnalyzeMethodsForObjectInfo(SyntaxList<Microsoft.CodeAnalysis.CSharp.Syntax.MemberDeclarationSyntax> members, ObjectInfo objectInformation)
+    {
+        var methods = members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>();
+        foreach (var method in methods)
+        {
+            Console.WriteLine($"Found property: {method.Identifier.Text}");
+            var methodName = method.Identifier.Text;
+            var returnType = method.ReturnType.ToString();
+            var accessibility = method.Modifiers.ToString();
+            Console.WriteLine($"Property accessibility: {accessibility}");
+            objectInformation.AddMethod(new MethodInfo(methodName, accessibility, returnType));
         }
     }
 
@@ -124,6 +139,7 @@ public class ClassAnalyzer
             string interfaceName = interfaceNode.Identifier.Text;
             var interfaceInfo = new InterfaceInfo(interfaceName);
             AnalyzePropertiesForObjectInfo(interfaceNode.Members, interfaceInfo);
+            AnalyzeMethodsForObjectInfo(interfaceNode.Members, interfaceInfo);
             objectInfos.Add(interfaceInfo);
         }
     }
