@@ -23,7 +23,8 @@ internal static class Program
         try
         {
             Console.WriteLine("Extracting classes...");
-            classInfos = ClassAnalyzer.ExtractClassesFromSolution(solutionPath);
+            var classAnalyzer = new ClassAnalyzer();
+            classInfos = classAnalyzer.ExtractClassesFromSolution(solutionPath);
         }
         catch (Exception ex)
         {

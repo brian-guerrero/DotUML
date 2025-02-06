@@ -4,7 +4,14 @@ namespace DotUML.CLI.Models;
 
 public record PropertyInfo(string Name, string Visibility, string Type)
 {
-    public string GetDiagramRepresentation() => $"        {Visibility}{Name} : {Type}";
+    private char VisibilityCharacter => Visibility switch
+    {
+        var v when v.Contains("public") => '+',
+        var v when v.Contains("protected") => '#',
+        var v when v.Contains("private") => '-',
+        _ => '?'
+    };
+    public string GetDiagramRepresentation() => $"        {VisibilityCharacter}{Name} : {Type}\n";
 }
 
 public abstract record ObjectInfo(string Name)
