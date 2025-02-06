@@ -65,8 +65,45 @@ public class ClassAnalyzer
         var root = syntaxTree.GetRoot();
         var semanticModel = await document.GetSemanticModelAsync();
 
+        AnalyzeRecords(root, semanticModel);
         AnalyzeClasses(root, semanticModel);
         AnalyzeInterfaces(root);
+    }
+
+    private void AnalyzeRecords(SyntaxNode root, SemanticModel semanticModel)
+    {
+        foreach (var recordNode in root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.RecordDeclarationSyntax>())
+        {
+            if (string.IsNullOrEmpty(recordNode.Identifier.Text))
+            {
+                _logger.LogInformation("Skipping record without identifier");
+                continue;
+            }
+            _logger.LogInformation($"Found record: {recordNode.Identifier.Text}");
+            string className = recordNode.Identifier.Text;
+            var baseRecord = recordNode.BaseList?.Types.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeSyntax>().FirstOrDefault();
+            ClassInfo recordInfo = null;
+            if (baseRecord is null)
+            {
+                recordInfo = new ClassInfo(className);
+            }
+            if (semanticModel is not null && baseRecord is not null)
+            {
+                var symbol = semanticModel.GetSymbolInfo(baseRecord.Type).Symbol;
+                if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind == TypeKind.Interface)
+                {
+                    recordInfo = new ClassInfo(className, namedTypeSymbol.Name);
+                    objectInfos.Add(new InterfaceInfo(namedTypeSymbol.Name));
+                }
+                else
+                {
+                    recordInfo = new ClassInfo(className, baseRecord.Type.ToString());
+                }
+            }
+            AnalyzePropertiesForObjectInfo(recordNode.Members, recordInfo!);
+            AnalyzeMethodsForObjectInfo(recordNode.Members, recordInfo!);
+            objectInfos.Add(recordInfo!);
+        }
     }
 
     private void AnalyzeClasses(SyntaxNode root, SemanticModel semanticModel)
