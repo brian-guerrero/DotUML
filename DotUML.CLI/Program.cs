@@ -1,42 +1,52 @@
-﻿using System.Threading.Tasks;
-
-using DotUML.CLI.Analyzers;
+﻿using DotUML.CLI.Analyzers;
 using DotUML.CLI.Generators;
-using DotUML.CLI.Models;
+using ConsoleAppFramework;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
-namespace DotUML.CLI;
 
-internal static class Program
-{
-    private static void Main(string[] args)
+var app = ConsoleApp.Create();
+app
+    .ConfigureLogging(x =>
+        {
+            x.SetMinimumLevel(LogLevel.Information);
+        })
+    .ConfigureServices((services) =>
     {
-        if (args.Length == 0)
-        {
-            Console.WriteLine("Usage: dotnet run -- <solution-path>");
-            return;
-        }
+        services.AddTransient<ClassAnalyzer>();
+        services.AddTransient<MermaidClassDiagramGenerator>();
+    });
 
-        string solutionPath = args[0];
-        string outputPath = Path.Combine(Directory.GetCurrentDirectory(), "README.md");
 
-        HashSet<ObjectInfo> classInfos;
-        try
-        {
-            Console.WriteLine("Extracting classes...");
-            var classAnalyzer = new ClassAnalyzer();
-            classInfos = classAnalyzer.ExtractClassesFromSolution(solutionPath);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error extracting classes: {ex.Message}\n{ex.StackTrace}");
-            return;
-        }
+app.Add("generate", async ([FromServices] ClassAnalyzer classAnalyzer,
+    [FromServices] MermaidClassDiagramGenerator diagramGenerator,
+    string solutionPath,
+    string outputPath = "mermaid.md") =>
+{
+    if (string.IsNullOrEmpty(solutionPath))
+    {
+        Console.WriteLine("Usage: generate <solution-path> <output-path>");
+        return;
+    }
+
+
+    try
+    {
+        Console.WriteLine("Extracting classes...");
+        var classInfos = await classAnalyzer.ExtractClassesFromSolutionAsync(solutionPath);
+
         Console.WriteLine("Generating UML...");
-        string mermaidDiagram = MermaidClassDiagramGenerator.GenerateDiagram(classInfos);
+        string mermaidDiagram = diagramGenerator.GenerateDiagram(classInfos);
 
-        Console.WriteLine("Writing to README.md...");
-        MermaidClassDiagramGenerator.WriteToReadme(outputPath, mermaidDiagram);
+        Console.WriteLine("Writing to output file...");
+        diagramGenerator.WriteToReadme(outputPath, mermaidDiagram);
 
         Console.WriteLine("Done!");
     }
-}
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error: {ex.Message}\n{ex.StackTrace}");
+    }
+});
+
+app.Run(args);

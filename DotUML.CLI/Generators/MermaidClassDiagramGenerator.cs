@@ -4,9 +4,9 @@ using DotUML.CLI.Models;
 
 namespace DotUML.CLI.Generators;
 
-public static class MermaidClassDiagramGenerator
+public class MermaidClassDiagramGenerator
 {
-    public static string GenerateDiagram(IEnumerable<ObjectInfo> objectInfos)
+    public string GenerateDiagram(IEnumerable<ObjectInfo> objectInfos)
     {
         var diagram = new StringBuilder();
         diagram.AppendLine("```mermaid");
@@ -18,7 +18,7 @@ public static class MermaidClassDiagramGenerator
         return diagram.ToString();
     }
 
-    public static void WriteToReadme(string outputPath, string content)
+    public void WriteToReadme(string outputPath, string content)
     {
         File.WriteAllText(outputPath, content);
         Console.WriteLine($"Mermaid UML diagram written to {outputPath}");
