@@ -1,49 +1,28 @@
-```mermaid
-classDiagram
-    class IConsumer {
-        <<interface>>
-    }
-    class GeneratePageIllustrationConsumer {
-    }
-    IConsumer <|-- GeneratePageIllustrationConsumer
-    class GeneratePageIllustrationConsumerDefinition {
-    }
-    ConsumerDefinition<GeneratePageIllustrationConsumer> <|-- GeneratePageIllustrationConsumerDefinition
-    class IConsumer {
-        <<interface>>
-    }
-    class GenerateStoryConsumer {
-    }
-    IConsumer <|-- GenerateStoryConsumer
-    class GenerateStoryConsumerConsumerDefinition {
-    }
-    ConsumerDefinition<GenerateStoryConsumer> <|-- GenerateStoryConsumerConsumerDefinition
-    class Story {
-        +Title : string
-        +Content : string
-    }
-    class StoryBook {
-        +Title : string
-        +Description : string
-        +Pages : List<Page>
-    }
-    class Page {
-        +ImageDescription : string
-        +Content : string
-        +PageNumber : int
-    }
-    class StoryEnpoints {
-    }
-    class IProjectMetadata {
-        <<interface>>
-    }
-    class ChildrenStoryGenerator_API {
-        +ProjectPath : string
-    }
-    IProjectMetadata <|-- ChildrenStoryGenerator_API
-    class ChildrenStoryGenerator_AppHost {
-        +ProjectPath : string
-    }
-    class Extensions {
-    }
+# DotUML
+## DotUML a .NET CLI tool for designing mermaid diagrams from your .NET solutions.
+
+### Features
+- Generate Mermaid class diagrams from .NET solutions
+- Easy to use CLI interface
+
+### Installation
+To install DotUML, run the following command:
+```sh
+dotnet tool install -g DotUML
 ```
+
+### Usage
+To generate a Mermaid diagram, navigate to your .NET solution directory and run:
+```sh
+dotuml generate
+```
+
+or pass an absolute directory as a parameter:
+
+```sh
+dotuml generate C:\\source\\repos\\Solution\\Awesome.sln
+```
+
+### Contributing
+Contributions are welcome! Please fork the repository and submit a pull request.
+
