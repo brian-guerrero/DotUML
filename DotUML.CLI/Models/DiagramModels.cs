@@ -14,8 +14,17 @@ public record PropertyInfo(string Name, string Visibility, string Type)
     public string GetDiagramRepresentation() => $"        {VisibilityCharacter}{Name} : {Type}\n";
 }
 
+public record MethodArgumentInfo(string Name, string Type)
+{
+    public string GetDiagramRepresentation() => $"{Type} {Name}";
+}
+
 public record MethodInfo(string Name, string Visibility, string ReturnType)
 {
+    private List<MethodArgumentInfo> _arguments = new();
+    public void AddArgument(MethodArgumentInfo argument) => _arguments.Add(argument);
+
+    private string GetArguments() => string.Join(", ", _arguments.Select(a => a.GetDiagramRepresentation()));
     private char VisibilityCharacter => Visibility switch
     {
         var v when v.Contains("public") => '+',
@@ -27,9 +36,9 @@ public record MethodInfo(string Name, string Visibility, string ReturnType)
     {
         if (ReturnType.Contains("void"))
         {
-            return $"        {VisibilityCharacter}{Name}()\n";
+            return $"        {VisibilityCharacter}{Name}({GetArguments()})\n";
         }
-        return $"        {VisibilityCharacter}{Name}() : {ReturnType}\n";
+        return $"        {VisibilityCharacter}{Name}({GetArguments()}) : {ReturnType}\n";
     }
 }
 
