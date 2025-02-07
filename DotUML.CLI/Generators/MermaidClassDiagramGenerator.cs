@@ -9,12 +9,12 @@ public class MermaidClassDiagramGenerator
     public string GenerateDiagram(IEnumerable<ObjectInfo> objectInfos)
     {
         var diagram = new StringBuilder();
-        diagram.AppendLine("```mermaid");
-        diagram.AppendLine("classDiagram");
+        diagram.Append("```mermaid\n");
+        diagram.Append("classDiagram\n");
 
-        diagram.AppendJoin(string.Empty, objectInfos.Select(o => o.GetDiagramRepresentation()));
+        diagram.AppendJoin(string.Empty, objectInfos.Select(o => o.GetDiagramRepresentation().Replace("\r\n", "\n").Replace("\r", "\n")));
 
-        diagram.AppendLine("```");
+        diagram.Append("```");
         return diagram.ToString();
     }
 
