@@ -23,6 +23,12 @@ or pass an absolute directory as a parameter:
 dotuml generate C:\\source\\repos\\Solution\\Awesome.sln
 ```
 
+### Running Tests
+To run the unit tests, navigate to the `tests` directory and use the following command:
+```sh
+dotnet test
+```
+
 ### Contributing
 Contributions are welcome! Please fork the repository and submit a pull request.
 

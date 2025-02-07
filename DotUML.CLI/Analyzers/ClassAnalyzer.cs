@@ -24,7 +24,8 @@ public class ClassAnalyzer
         if (!MSBuildLocator.IsRegistered)
         {
             _logger.LogInformation("Registering MSBuild defaults...");
-            MSBuildLocator.RegisterDefaults();
+            var instance = MSBuildLocator.QueryVisualStudioInstances().First();
+            MSBuildLocator.RegisterInstance(instance);
         }
         using (var workspace = MSBuildWorkspace.Create())
         {
