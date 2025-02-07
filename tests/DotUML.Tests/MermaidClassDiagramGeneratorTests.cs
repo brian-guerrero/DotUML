@@ -15,8 +15,8 @@ public class MermaidClassDiagramGeneratorTests
         // Arrange
         var generator = new MermaidClassDiagramGenerator();
         var classInfo = new ClassInfo("TestClass");
-        classInfo.AddProperty(new PropertyInfo("TestProperty", "public", "string"));
-        classInfo.AddMethod(new MethodInfo("TestMethod", "public", "void"));
+        classInfo.AddProperty(new PropertyInfo("TestProperty", "public", (TypeInfo)"string"));
+        classInfo.AddMethod(new MethodInfo("TestMethod", "public", (TypeInfo)"void"));
         var objectInfos = new List<ObjectInfo> { classInfo };
 
         // Act
