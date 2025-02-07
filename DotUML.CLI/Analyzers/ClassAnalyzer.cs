@@ -153,7 +153,7 @@ public class ClassAnalyzer
             var propertyType = property.Type.ToString();
             var accessibility = property.Modifiers.ToString();
             _logger.LogInformation($"Property accessibility: {accessibility}");
-            objectInformation.AddProperty(new PropertyInfo(propertyName, accessibility, propertyType));
+            objectInformation.AddProperty(new PropertyInfo(propertyName, accessibility, (Models.TypeInfo)propertyType));
         }
     }
 
@@ -167,12 +167,12 @@ public class ClassAnalyzer
             var returnType = method.ReturnType.ToString();
             var accessibility = method.Modifiers.ToString();
             _logger.LogInformation($"Property accessibility: {accessibility}");
-            var methodInfo = new MethodInfo(methodName, accessibility, returnType);
+            var methodInfo = new MethodInfo(methodName, accessibility, (Models.TypeInfo)returnType);
             foreach (var parameter in method.ParameterList.Parameters)
             {
                 var parameterName = parameter.Identifier.Text;
                 var parameterType = parameter.Type.ToString();
-                methodInfo.AddArgument(new MethodArgumentInfo(parameterName, parameterType));
+                methodInfo.AddArgument(new MethodArgumentInfo(parameterName, (Models.TypeInfo)parameterType));
             }
             objectInformation.AddMethod(methodInfo);
         }

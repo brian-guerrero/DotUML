@@ -2,7 +2,14 @@ using System.Text;
 
 namespace DotUML.CLI.Models;
 
-public record PropertyInfo(string Name, string Visibility, string Type)
+public record TypeInfo(string Name)
+{
+    public string SanitizedName => Name.Replace('<', '~').Replace('>', '~');
+
+    public static explicit operator TypeInfo(string name) => new TypeInfo(name);
+};
+
+public record PropertyInfo(string Name, string Visibility, TypeInfo Type)
 {
     private char VisibilityCharacter => Visibility switch
     {
@@ -11,15 +18,15 @@ public record PropertyInfo(string Name, string Visibility, string Type)
         var v when v.Contains("private") => '-',
         _ => '?'
     };
-    public string GetDiagramRepresentation() => $"        {VisibilityCharacter}{Name} : {Type}\n";
+    public string GetDiagramRepresentation() => $"        {VisibilityCharacter}{Name} : {Type.SanitizedName}\n";
 }
 
-public record MethodArgumentInfo(string Name, string Type)
+public record MethodArgumentInfo(string Name, TypeInfo Type)
 {
-    public string GetDiagramRepresentation() => $"{Type} {Name}";
+    public string GetDiagramRepresentation() => $"{Type.SanitizedName} {Name}";
 }
 
-public record MethodInfo(string Name, string Visibility, string ReturnType)
+public record MethodInfo(string Name, string Visibility, TypeInfo ReturnType)
 {
     private List<MethodArgumentInfo> _arguments = new();
     public void AddArgument(MethodArgumentInfo argument) => _arguments.Add(argument);
@@ -34,11 +41,11 @@ public record MethodInfo(string Name, string Visibility, string ReturnType)
     };
     public string GetDiagramRepresentation()
     {
-        if (ReturnType.Contains("void"))
+        if (ReturnType.Name.Contains("void"))
         {
             return $"        {VisibilityCharacter}{Name}({GetArguments()})\n";
         }
-        return $"        {VisibilityCharacter}{Name}({GetArguments()}) : {ReturnType}\n";
+        return $"        {VisibilityCharacter}{Name}({GetArguments()}) : {ReturnType.SanitizedName}\n";
     }
 }
 
