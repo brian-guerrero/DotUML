@@ -8,29 +8,38 @@ public class ClassDiagramGenerator
     public string GenerateDiagram(Namespaces namespaces)
     {
         var diagram = new IndentedStringBuilder();
-        diagram.Append("```mermaid\n");
-        diagram.Append("classDiagram\n");
-
+        diagram.AppendLine("```mermaid");
+        diagram.AppendLine("classDiagram");
 
         foreach (var ns in namespaces)
         {
             if (!string.IsNullOrEmpty(ns.Name))
             {
-                diagram.IncreaseIndent();
                 diagram.AppendLine($"namespace {ns.Name} {{");
+                diagram.IncreaseIndent();
             }
-            diagram.IncreaseIndent();
-            ns.ObjectInfos.Select(o => o.GetObjectRepresentation()).ToList().ForEach(r => diagram.Append(r));
-            diagram.DecreaseIndent();
+
+            foreach (var obj in ns.ObjectInfos)
+            {
+                diagram.Append(obj.GetObjectRepresentation());
+            }
+
             if (!string.IsNullOrEmpty(ns.Name))
             {
                 diagram.DecreaseIndent();
-                diagram.AppendLine("    }");
+                diagram.AppendLine("}");
             }
-            ns.ObjectInfos.OfType<IHaveRelationships>().Select(o => o.GetRelationshipRepresentation()).ToList().ForEach(r => diagram.Append(r));
         }
 
-        diagram.Append("```");
+        foreach (var ns in namespaces)
+        {
+            foreach (var obj in ns.ObjectInfos.OfType<IHaveRelationships>())
+            {
+                diagram.Append(obj.GetRelationshipRepresentation());
+            }
+        }
+
+        diagram.AppendLine("```");
         return diagram.ToString();
     }
 
