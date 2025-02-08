@@ -6,7 +6,7 @@ namespace DotUML.CLI.Generators;
 
 public class MermaidClassDiagramGenerator
 {
-    public string GenerateDiagram(IEnumerable<ObjectInfo> objectInfos)
+    public string GenerateDiagram(Namespaces objectInfos)
     {
         var diagram = new StringBuilder();
         diagram.Append("```mermaid\n");

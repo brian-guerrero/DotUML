@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Text;
 
 namespace DotUML.CLI.Models;
@@ -110,4 +111,42 @@ public record InterfaceInfo(string Name) : ObjectInfo(Name)
         sb.AppendLine("    }");
         return sb.ToString();
     }
+}
+
+public record NamespaceInfo(string Name)
+{
+    private readonly HashSet<ObjectInfo> _objectInfos = new();
+
+    public void AddObjectInfo(params IEnumerable<ObjectInfo> objects)
+    {
+        foreach (var obj in objects)
+        {
+            _objectInfos.Add(obj);
+        }
+    }
+
+    public string GetDiagramRepresentation() => string.Join(string.Empty, _objectInfos.Select(o => o.GetDiagramRepresentation()));
+}
+
+public class Namespaces : IGrouping<string, NamespaceInfo>
+{
+
+    public Namespaces(IEnumerable<NamespaceInfo> namespaces)
+    {
+        Key = namespaces.FirstOrDefault().Name;
+        foreach (var namespaceInfo in namespaces)
+        {
+            Add(namespaceInfo);
+        }
+    }
+
+    public string Key { get; }
+
+    public IEnumerator<NamespaceInfo> GetEnumerator() => _namespaces.GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    private readonly HashSet<NamespaceInfo> _namespaces = new();
+
+    public void Add(NamespaceInfo namespaceInfo) => _namespaces.Add(namespaceInfo);
 }
