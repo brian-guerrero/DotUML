@@ -1,7 +1,9 @@
+
 using DotUML.CLI.Models;
 
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.Extensions.Logging;
 
@@ -137,10 +139,24 @@ public class ClassAnalyzer
                     classInfo = new ClassInfo(className, baseClass.Type.ToString());
                 }
             }
+            AnalyzeDependenciesOnConstructor(classNode, classInfo);
             AnalyzePropertiesForObjectInfo(classNode.Members, classInfo!);
             AnalyzeMethodsForObjectInfo(classNode.Members, classInfo!);
             objectInfos.Add(classInfo!);
 
+        }
+    }
+
+    private void AnalyzeDependenciesOnConstructor(ClassDeclarationSyntax classNode, ClassInfo? classInfo)
+    {
+        var constructors = classNode.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ConstructorDeclarationSyntax>();
+        foreach (var constructor in constructors)
+        {
+            foreach (var parameter in constructor.ParameterList.Parameters)
+            {
+                var parameterType = parameter.Type.ToString();
+                classInfo?.AddDependency(new DependencyInfo((Models.TypeInfo)parameterType));
+            }
         }
     }
 
