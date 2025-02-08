@@ -1,4 +1,5 @@
 
+
 using DotUML.CLI.Models;
 
 using Microsoft.Build.Locator;
@@ -103,10 +104,23 @@ public class ClassAnalyzer
                     recordInfo = new ClassInfo(className, baseRecord.Type.ToString());
                 }
             }
+
+            AnalyzePropertiesFromRecordConstructor(recordNode.ParameterList, recordInfo);
             AnalyzePropertiesForObjectInfo(recordNode.Members, recordInfo!);
             AnalyzeMethodsForObjectInfo(recordNode.Members, recordInfo!);
             objectInfos.Add(recordInfo!);
         }
+    }
+
+    private void AnalyzePropertiesFromRecordConstructor(ParameterListSyntax parameterList, ClassInfo? recordInfo)
+    {
+        foreach (var parameter in parameterList.Parameters)
+        {
+            var parameterName = parameter.Identifier.Text;
+            var parameterType = parameter.Type.ToString();
+            recordInfo?.AddProperty(new PropertyInfo(parameterName, "public", (Models.TypeInfo)parameterType));
+        }
+
     }
 
     private void AnalyzeClasses(SyntaxNode root, SemanticModel semanticModel)
