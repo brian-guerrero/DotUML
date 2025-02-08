@@ -11,14 +11,7 @@ public record TypeInfo(string Name)
 
 public record PropertyInfo(string Name, string Visibility, TypeInfo Type)
 {
-    private char VisibilityCharacter => Visibility switch
-    {
-        var v when v.Contains("public") => '+',
-        var v when v.Contains("protected") => '#',
-        var v when v.Contains("private") => '-',
-        _ => '?'
-    };
-    public string GetDiagramRepresentation() => $"        {VisibilityCharacter}{Name} : {Type.SanitizedName}\n";
+    public string GetDiagramRepresentation() => $"        {DiagramHelpers.GetVisibilityCharacter(Visibility)}{Name} : {Type.SanitizedName}\n";
 }
 
 public record MethodArgumentInfo(string Name, TypeInfo Type)
@@ -28,24 +21,15 @@ public record MethodArgumentInfo(string Name, TypeInfo Type)
 
 public record MethodInfo(string Name, string Visibility, TypeInfo ReturnType)
 {
-    private List<MethodArgumentInfo> _arguments = new();
+    private readonly List<MethodArgumentInfo> _arguments = new();
     public void AddArgument(MethodArgumentInfo argument) => _arguments.Add(argument);
 
     private string GetArguments() => string.Join(", ", _arguments.Select(a => a.GetDiagramRepresentation()));
-    private char VisibilityCharacter => Visibility switch
-    {
-        var v when v.Contains("public") => '+',
-        var v when v.Contains("protected") => '#',
-        var v when v.Contains("private") => '-',
-        _ => '?'
-    };
+
     public string GetDiagramRepresentation()
     {
-        if (ReturnType.Name.Contains("void"))
-        {
-            return $"        {VisibilityCharacter}{Name}({GetArguments()})\n";
-        }
-        return $"        {VisibilityCharacter}{Name}({GetArguments()}) : {ReturnType.SanitizedName}\n";
+        var returnType = ReturnType.Name.Contains("void") ? string.Empty : $" : {ReturnType.SanitizedName}";
+        return $"        {DiagramHelpers.GetVisibilityCharacter(Visibility)}{Name}({GetArguments()}){returnType}\n";
     }
 }
 
@@ -60,34 +44,29 @@ public abstract record ObjectInfo(string Name)
 
     public void AddProperty(PropertyInfo property) => _properties.Add(property);
     public void AddMethod(MethodInfo method) => _methods.Add(method);
-
 }
 
 public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
 {
-    private List<DependencyInfo> _dependencies = new();
+    private readonly List<DependencyInfo> _dependencies = new();
 
     public override string GetDiagramRepresentation()
     {
         var sb = new StringBuilder();
         sb.AppendLine($"    class {Name} {{");
         sb.AppendJoin(string.Empty, _properties.Select(p => p.GetDiagramRepresentation()));
-        sb.AppendJoin(string.Empty, _methods.Select(p => p.GetDiagramRepresentation()));
+        sb.AppendJoin(string.Empty, _methods.Select(m => m.GetDiagramRepresentation()));
         sb.AppendLine("    }");
         sb.AppendJoin(string.Empty, _dependencies.Select(d => $"    {Name} ..> {d.Type.SanitizedName}\n"));
-        if (string.IsNullOrEmpty(BaseClass))
+        if (!string.IsNullOrEmpty(BaseClass))
         {
-            return sb.ToString();
+            sb.AppendLine($"    {BaseClass} <|-- {Name}");
         }
-        sb.AppendLine($"    {BaseClass} <|-- {Name}");
         return sb.ToString();
     }
 
-    internal void AddDependency(DependencyInfo dependencyInfo)
-    {
-        _dependencies.Add(dependencyInfo);
-    }
-};
+    internal void AddDependency(DependencyInfo dependencyInfo) => _dependencies.Add(dependencyInfo);
+}
 
 public record InterfaceInfo(string Name) : ObjectInfo(Name)
 {
@@ -97,7 +76,7 @@ public record InterfaceInfo(string Name) : ObjectInfo(Name)
         sb.AppendLine($"    class {Name} {{");
         sb.AppendLine("        <<interface>>");
         sb.AppendJoin(string.Empty, _properties.Select(p => p.GetDiagramRepresentation()));
-        sb.AppendJoin(string.Empty, _methods.Select(p => p.GetDiagramRepresentation()));
+        sb.AppendJoin(string.Empty, _methods.Select(m => m.GetDiagramRepresentation()));
         sb.AppendLine("    }");
         return sb.ToString();
     }
