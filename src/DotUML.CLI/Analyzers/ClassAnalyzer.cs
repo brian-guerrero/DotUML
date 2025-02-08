@@ -1,5 +1,6 @@
 
 
+
 using DotUML.CLI.Diagram;
 
 using Microsoft.Build.Locator;
@@ -92,7 +93,31 @@ public class ClassAnalyzer
         namespaceInfo.AddObjectInfo(classes);
         var interfaces = AnalyzeInterfaces(root);
         namespaceInfo.AddObjectInfo(interfaces);
+        var enums = AnalyzeEnums(root, semanticModel);
+        namespaceInfo.AddObjectInfo(enums);
         return namespaceInfo;
+    }
+
+    private IEnumerable<EnumInfo> AnalyzeEnums(SyntaxNode root, SemanticModel semanticModel)
+    {
+        foreach (var e in root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.EnumDeclarationSyntax>())
+        {
+            if (string.IsNullOrEmpty(e.Identifier.Text))
+            {
+                _logger.LogInformation("Skipping enum without identifier");
+                yield break;
+            }
+            _logger.LogInformation($"Found enum: {e.Identifier.Text}");
+            var enumName = e.Identifier.Text;
+            var enumInfo = new EnumInfo(enumName);
+            foreach (var member in e.Members)
+            {
+                var memberName = member.Identifier.Text;
+                enumInfo.AddValue(memberName);
+            }
+            yield return enumInfo;
+        }
+        ;
     }
 
     private IEnumerable<ObjectInfo> AnalyzeRecords(SyntaxNode root, SemanticModel semanticModel)

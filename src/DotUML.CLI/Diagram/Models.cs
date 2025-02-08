@@ -76,6 +76,27 @@ public abstract record ObjectInfo(string Name)
     public void AddMethod(MethodInfo method) => _methods.Add(method);
 }
 
+public record EnumInfo(string Name) : ObjectInfo(Name)
+{
+    private readonly List<string> _values = new();
+
+    public override string GetObjectRepresentation()
+    {
+        var sb = new IndentedStringBuilder();
+        sb.AppendLine($"class {Name} {{");
+        sb.IncreaseIndent();
+        sb.AppendLine("<<enumeration>>");
+        sb.AppendJoin("\n", _values.Select(p => p));
+        sb.DecreaseIndent();
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    public void AddValue(string value) => _values.Add(value);
+
+    public override string GetRelationshipRepresentation() => string.Empty;
+}
+
 public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
 {
     private readonly List<DependencyInfo> _dependencies = new();
