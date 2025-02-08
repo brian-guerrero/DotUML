@@ -6,12 +6,41 @@ public record TypeInfo(string Name)
 {
     public string SanitizedName => Name.Replace('<', '~').Replace('>', '~');
 
+    public bool IsList => Name.StartsWith("List<");
+
+    public bool IsPrimitive => Name switch
+    {
+        "int" or "long" or "short" or "byte" or "float" or "double" or "decimal" or "bool" or "char" or "string" => true,
+        _ => false
+    };
+
     public static explicit operator TypeInfo(string name) => new TypeInfo(name);
-};
+}
+
+public enum PropertyRelationship
+{
+    Aggregation,
+    Composition,
+    None
+}
 
 public record PropertyInfo(string Name, string Visibility, TypeInfo Type)
 {
     public string GetDiagramRepresentation() => $"        {DiagramHelpers.GetVisibilityCharacter(Visibility)}{Name} : {Type.SanitizedName}\n";
+
+    public PropertyRelationship Relationship => Type switch
+    {
+        { IsList: true } => PropertyRelationship.Composition,
+        { IsPrimitive: false } => PropertyRelationship.Aggregation,
+        _ => PropertyRelationship.None
+    };
+
+    public string GetRelationshipRepresentation(string objectName) => Relationship switch
+    {
+        PropertyRelationship.Aggregation => $"    {Type.SanitizedName} --o {Name}\n",
+        PropertyRelationship.Composition => $"    {Type.SanitizedName} --* {Name}\n",
+        _ => string.Empty
+    };
 }
 
 public record MethodArgumentInfo(string Name, TypeInfo Type)
@@ -62,6 +91,7 @@ public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
         {
             sb.AppendLine($"    {BaseClass} <|-- {Name}");
         }
+        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(Name)));
         return sb.ToString();
     }
 
