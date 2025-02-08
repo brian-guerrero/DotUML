@@ -103,7 +103,11 @@ public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
         sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(Name))); return sb.ToString();
     }
 
-    internal void AddDependency(DependencyInfo dependencyInfo) => _dependencies.Add(dependencyInfo);
+    internal void AddDependency(DependencyInfo dependencyInfo)
+    {
+        if (dependencyInfo.Type.IsPrimitive) return;
+        _dependencies.Add(dependencyInfo);
+    }
 }
 
 public record InterfaceInfo(string Name) : ObjectInfo(Name)
