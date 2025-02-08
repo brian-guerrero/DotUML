@@ -115,17 +115,15 @@ public record InterfaceInfo(string Name) : ObjectInfo(Name)
 
 public record NamespaceInfo(string Name)
 {
-    private readonly HashSet<ObjectInfo> _objectInfos = new();
+    public readonly HashSet<ObjectInfo> ObjectInfos = new();
 
     public void AddObjectInfo(params IEnumerable<ObjectInfo> objects)
     {
         foreach (var obj in objects)
         {
-            _objectInfos.Add(obj);
+            ObjectInfos.Add(obj);
         }
     }
-
-    public string GetDiagramRepresentation() => string.Join(string.Empty, _objectInfos.Select(o => o.GetDiagramRepresentation()));
 }
 
 public class Namespaces : IGrouping<string, NamespaceInfo>

@@ -12,7 +12,15 @@ public class MermaidClassDiagramGenerator
         diagram.Append("```mermaid\n");
         diagram.Append("classDiagram\n");
 
-        diagram.AppendJoin(string.Empty, objectInfos.Select(o => o.GetDiagramRepresentation().Replace("\r\n", "\n").Replace("\r", "\n")));
+
+        diagram.AppendJoin(string.Empty, objectInfos.Select(o =>
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"    namespace {o.Name} {{");
+            sb.AppendJoin(string.Empty, o.ObjectInfos.Select(o => o.GetDiagramRepresentation()));
+            sb.AppendLine("    }");
+            return sb.ToString();
+        }));
 
         diagram.Append("```");
         return diagram.ToString();
