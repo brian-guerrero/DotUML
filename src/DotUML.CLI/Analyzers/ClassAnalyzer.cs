@@ -131,31 +131,38 @@ public class ClassAnalyzer
             }
             _logger.LogInformation($"Found record: {recordNode.Identifier.Text}");
             string className = recordNode.Identifier.Text;
-            var baseRecord = recordNode.BaseList?.Types.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeSyntax>().FirstOrDefault();
-            ClassInfo recordInfo = null;
-            if (baseRecord is null)
+            var baseRecords = recordNode.BaseList?.Types.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeSyntax>();
+            var recordInfo = new ClassInfo(className);
+            foreach (var baseObject in ExtractBaseObjects(semanticModel, baseRecords, recordInfo))
             {
-                recordInfo = new ClassInfo(className);
+                yield return baseObject;
             }
-            if (semanticModel is not null && baseRecord is not null)
-            {
-                var symbol = semanticModel.GetSymbolInfo(baseRecord.Type).Symbol;
-                if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind == TypeKind.Interface)
-                {
-                    recordInfo = new ClassInfo(className, namedTypeSymbol.Name);
-                    yield return new InterfaceInfo(namedTypeSymbol.Name);
-                }
-                else
-                {
-                    recordInfo = new ClassInfo(className, baseRecord.Type.ToString());
-                }
-            }
-
             AnalyzePropertiesFromRecordConstructor(recordNode.ParameterList, recordInfo);
             AnalyzePropertiesForObjectInfo(recordNode.Members, recordInfo!);
             AnalyzeMethodsForObjectInfo(recordNode.Members, recordInfo!);
             if (recordInfo is not null)
                 yield return recordInfo;
+        }
+    }
+
+    private static IEnumerable<ObjectInfo> ExtractBaseObjects(SemanticModel semanticModel, IEnumerable<BaseTypeSyntax>? baseRecords, ClassInfo objectInfo)
+    {
+        if (baseRecords is not null && baseRecords.Any())
+        {
+            foreach (var baseRecord in baseRecords)
+            {
+                var symbol = semanticModel.GetSymbolInfo(baseRecord.Type).Symbol;
+                if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind == TypeKind.Interface)
+                {
+                    objectInfo.Implements(namedTypeSymbol.Name);
+                    yield return new InterfaceInfo(namedTypeSymbol.Name);
+                }
+                else
+                {
+                    objectInfo.Inherits(baseRecord.Type.ToString());
+                    yield return new ClassInfo(baseRecord.Type.ToString());
+                }
+            }
         }
     }
 
@@ -181,24 +188,11 @@ public class ClassAnalyzer
             }
             _logger.LogInformation($"Found class: {classNode.Identifier.Text}");
             string className = classNode.Identifier.Text;
-            var baseClass = classNode.BaseList?.Types.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeSyntax>().FirstOrDefault();
-            ClassInfo classInfo = null;
-            if (baseClass is null)
+            var baseClasses = classNode.BaseList?.Types.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeSyntax>();
+            var classInfo = new ClassInfo(className);
+            foreach (var baseObject in ExtractBaseObjects(semanticModel, baseClasses, classInfo))
             {
-                classInfo = new ClassInfo(className);
-            }
-            if (semanticModel is not null && baseClass is not null)
-            {
-                var symbol = semanticModel.GetSymbolInfo(baseClass.Type).Symbol;
-                if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind == TypeKind.Interface)
-                {
-                    classInfo = new ClassInfo(className, namedTypeSymbol.Name);
-                    yield return new InterfaceInfo(namedTypeSymbol.Name);
-                }
-                else
-                {
-                    classInfo = new ClassInfo(className, baseClass.Type.ToString());
-                }
+                yield return baseObject;
             }
             AnalyzeDependenciesOnConstructor(classNode, classInfo);
             AnalyzePropertiesForObjectInfo(classNode.Members, classInfo!);
