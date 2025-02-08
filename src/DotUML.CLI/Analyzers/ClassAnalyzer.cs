@@ -1,6 +1,6 @@
 
 
-using DotUML.CLI.Models;
+using DotUML.CLI.Diagram;
 
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
@@ -13,14 +13,12 @@ namespace DotUML.CLI.Analyzers;
 public class ClassAnalyzer
 {
     private readonly ILogger<ClassAnalyzer> _logger;
-    private readonly HashSet<ObjectInfo> objectInfos = new();
-
     public ClassAnalyzer(ILogger<ClassAnalyzer> logger)
     {
         _logger = logger;
     }
 
-    public async Task<HashSet<ObjectInfo>> ExtractClassesFromSolutionAsync(string solutionFilePath)
+    public async Task<Namespaces> ExtractClassesFromSolutionAsync(string solutionFilePath)
     {
         // Locate and register the default instance of MSBuild installed on this machine.
         // https://github.com/dotnet/roslyn/issues/17974#issuecomment-624408861
@@ -39,18 +37,29 @@ public class ClassAnalyzer
             };
             _logger.LogInformation($"Opening solution: {solutionFilePath}");
             var solution = await workspace.OpenSolutionAsync(solutionFilePath);
+            Namespaces namespaces = null;
             foreach (var project in solution.Projects)
             {
                 _logger.LogInformation($"Analyzing project: {project.Name}");
-                await AnalyzeProject(project);
+                await foreach (var ns in AnalyzeProject(project))
+                {
+                    if (namespaces is null)
+                    {
+                        namespaces = new Namespaces([ns]);
+                    }
+                    else
+                    {
+                        namespaces.Add(ns);
+                    }
+                }
             }
 
             _logger.LogInformation("Finished analyzing solution.");
-            return objectInfos;
+            return namespaces!;
         }
     }
 
-    private async Task AnalyzeProject(Project project)
+    private async IAsyncEnumerable<NamespaceInfo> AnalyzeProject(Project project)
     {
         foreach (var document in project.Documents)
         {
@@ -58,23 +67,35 @@ public class ClassAnalyzer
             if (document.SourceCodeKind == SourceCodeKind.Regular)
             {
                 _logger.LogInformation($"Processing document: {document.Name}");
-                await AnalyzeDocument(document);
+                var ns = await AnalyzeDocument(document);
+                yield return ns;
             }
         }
     }
 
-    private async Task AnalyzeDocument(Document document)
+    private async Task<NamespaceInfo> AnalyzeDocument(Document document)
     {
         var syntaxTree = await document.GetSyntaxTreeAsync();
         var root = syntaxTree.GetRoot();
         var semanticModel = await document.GetSemanticModelAsync();
-
-        AnalyzeRecords(root, semanticModel);
-        AnalyzeClasses(root, semanticModel);
-        AnalyzeInterfaces(root);
+        NamespaceInfo namespaceInfo = null;
+        var namespaceDeclaration = root.DescendantNodes().OfType<NamespaceDeclarationSyntax>().FirstOrDefault();
+        if (namespaceDeclaration is not null)
+            namespaceInfo = new NamespaceInfo(namespaceDeclaration?.Name.ToString() ?? string.Empty);
+        var fileScopedNamespace = root.DescendantNodes().OfType<FileScopedNamespaceDeclarationSyntax>().FirstOrDefault();
+        if (fileScopedNamespace is not null)
+            namespaceInfo = new NamespaceInfo(fileScopedNamespace.Name.ToString());
+        namespaceInfo ??= new NamespaceInfo(string.Empty);
+        var records = AnalyzeRecords(root, semanticModel);
+        namespaceInfo.AddObjectInfo(records);
+        var classes = AnalyzeClasses(root, semanticModel);
+        namespaceInfo.AddObjectInfo(classes);
+        var interfaces = AnalyzeInterfaces(root);
+        namespaceInfo.AddObjectInfo(interfaces);
+        return namespaceInfo;
     }
 
-    private void AnalyzeRecords(SyntaxNode root, SemanticModel semanticModel)
+    private IEnumerable<ObjectInfo> AnalyzeRecords(SyntaxNode root, SemanticModel semanticModel)
     {
         foreach (var recordNode in root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.RecordDeclarationSyntax>())
         {
@@ -97,7 +118,7 @@ public class ClassAnalyzer
                 if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind == TypeKind.Interface)
                 {
                     recordInfo = new ClassInfo(className, namedTypeSymbol.Name);
-                    objectInfos.Add(new InterfaceInfo(namedTypeSymbol.Name));
+                    yield return new InterfaceInfo(namedTypeSymbol.Name);
                 }
                 else
                 {
@@ -108,7 +129,8 @@ public class ClassAnalyzer
             AnalyzePropertiesFromRecordConstructor(recordNode.ParameterList, recordInfo);
             AnalyzePropertiesForObjectInfo(recordNode.Members, recordInfo!);
             AnalyzeMethodsForObjectInfo(recordNode.Members, recordInfo!);
-            objectInfos.Add(recordInfo!);
+            if (recordInfo is not null)
+                yield return recordInfo;
         }
     }
 
@@ -118,12 +140,12 @@ public class ClassAnalyzer
         {
             var parameterName = parameter.Identifier.Text;
             var parameterType = parameter.Type.ToString();
-            recordInfo?.AddProperty(new PropertyInfo(parameterName, "public", (Models.TypeInfo)parameterType));
+            recordInfo?.AddProperty(new PropertyInfo(parameterName, "public", (Diagram.TypeInfo)parameterType));
         }
 
     }
 
-    private void AnalyzeClasses(SyntaxNode root, SemanticModel semanticModel)
+    private IEnumerable<ObjectInfo> AnalyzeClasses(SyntaxNode root, SemanticModel semanticModel)
     {
         foreach (var classNode in root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>())
         {
@@ -146,7 +168,7 @@ public class ClassAnalyzer
                 if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind == TypeKind.Interface)
                 {
                     classInfo = new ClassInfo(className, namedTypeSymbol.Name);
-                    objectInfos.Add(new InterfaceInfo(namedTypeSymbol.Name));
+                    yield return new InterfaceInfo(namedTypeSymbol.Name);
                 }
                 else
                 {
@@ -156,7 +178,8 @@ public class ClassAnalyzer
             AnalyzeDependenciesOnConstructor(classNode, classInfo);
             AnalyzePropertiesForObjectInfo(classNode.Members, classInfo!);
             AnalyzeMethodsForObjectInfo(classNode.Members, classInfo!);
-            objectInfos.Add(classInfo!);
+            if (classInfo is not null)
+                yield return classInfo;
 
         }
     }
@@ -169,7 +192,7 @@ public class ClassAnalyzer
             foreach (var parameter in constructor.ParameterList.Parameters)
             {
                 var parameterType = parameter.Type.ToString();
-                classInfo?.AddDependency(new DependencyInfo((Models.TypeInfo)parameterType));
+                classInfo?.AddDependency(new DependencyInfo((Diagram.TypeInfo)parameterType));
             }
         }
     }
@@ -184,7 +207,7 @@ public class ClassAnalyzer
             var propertyType = property.Type.ToString();
             var accessibility = property.Modifiers.ToString();
             _logger.LogInformation($"Property accessibility: {accessibility}");
-            objectInformation.AddProperty(new PropertyInfo(propertyName, accessibility, (Models.TypeInfo)propertyType));
+            objectInformation.AddProperty(new PropertyInfo(propertyName, accessibility, (Diagram.TypeInfo)propertyType));
         }
     }
 
@@ -198,18 +221,18 @@ public class ClassAnalyzer
             var returnType = method.ReturnType.ToString();
             var accessibility = method.Modifiers.ToString();
             _logger.LogInformation($"Property accessibility: {accessibility}");
-            var methodInfo = new MethodInfo(methodName, accessibility, (Models.TypeInfo)returnType);
+            var methodInfo = new MethodInfo(methodName, accessibility, (Diagram.TypeInfo)returnType);
             foreach (var parameter in method.ParameterList.Parameters)
             {
                 var parameterName = parameter.Identifier.Text;
                 var parameterType = parameter.Type.ToString();
-                methodInfo.AddArgument(new MethodArgumentInfo(parameterName, (Models.TypeInfo)parameterType));
+                methodInfo.AddArgument(new MethodArgumentInfo(parameterName, (Diagram.TypeInfo)parameterType));
             }
             objectInformation.AddMethod(methodInfo);
         }
     }
 
-    private void AnalyzeInterfaces(SyntaxNode root)
+    private IEnumerable<InterfaceInfo> AnalyzeInterfaces(SyntaxNode root)
     {
         foreach (var interfaceNode in root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InterfaceDeclarationSyntax>())
         {
@@ -223,7 +246,7 @@ public class ClassAnalyzer
             var interfaceInfo = new InterfaceInfo(interfaceName);
             AnalyzePropertiesForObjectInfo(interfaceNode.Members, interfaceInfo);
             AnalyzeMethodsForObjectInfo(interfaceNode.Members, interfaceInfo);
-            objectInfos.Add(interfaceInfo);
+            yield return interfaceInfo;
         }
     }
 }

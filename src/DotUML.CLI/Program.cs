@@ -1,8 +1,8 @@
 ﻿using DotUML.CLI.Analyzers;
-using DotUML.CLI.Generators;
 using ConsoleAppFramework;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using DotUML.CLI.Mermaid;
 
 
 var app = ConsoleApp.Create();
@@ -14,12 +14,12 @@ app
     .ConfigureServices((services) =>
     {
         services.AddTransient<ClassAnalyzer>();
-        services.AddTransient<MermaidClassDiagramGenerator>();
+        services.AddTransient<ClassDiagramGenerator>();
     });
 
 
 app.Add("generate", async ([FromServices] ClassAnalyzer classAnalyzer,
-    [FromServices] MermaidClassDiagramGenerator diagramGenerator,
+    [FromServices] ClassDiagramGenerator diagramGenerator,
     string solutionPath,
     string outputPath = "mermaid.md") =>
 {
