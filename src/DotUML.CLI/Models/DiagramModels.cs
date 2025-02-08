@@ -49,6 +49,8 @@ public record MethodInfo(string Name, string Visibility, TypeInfo ReturnType)
     }
 }
 
+public record DependencyInfo(TypeInfo Type);
+
 public abstract record ObjectInfo(string Name)
 {
     protected List<PropertyInfo> _properties = new();
@@ -63,18 +65,27 @@ public abstract record ObjectInfo(string Name)
 
 public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
 {
+    private List<DependencyInfo> _dependencies = new();
+
     public override string GetDiagramRepresentation()
     {
         var sb = new StringBuilder();
         sb.AppendLine($"    class {Name} {{");
         sb.AppendJoin(string.Empty, _properties.Select(p => p.GetDiagramRepresentation()));
         sb.AppendJoin(string.Empty, _methods.Select(p => p.GetDiagramRepresentation()));
-        sb.AppendLine("    }"); if (string.IsNullOrEmpty(BaseClass))
+        sb.AppendLine("    }");
+        sb.AppendJoin(string.Empty, _dependencies.Select(d => $"    {Name} ..> {d.Type.SanitizedName}\n"));
+        if (string.IsNullOrEmpty(BaseClass))
         {
             return sb.ToString();
         }
         sb.AppendLine($"    {BaseClass} <|-- {Name}");
         return sb.ToString();
+    }
+
+    internal void AddDependency(DependencyInfo dependencyInfo)
+    {
+        _dependencies.Add(dependencyInfo);
     }
 };
 
