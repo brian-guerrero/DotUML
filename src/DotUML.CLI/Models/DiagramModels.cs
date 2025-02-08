@@ -8,7 +8,7 @@ public record TypeInfo(string Name)
 
     public bool IsList => Name.StartsWith("List<");
 
-    public bool IsPrimitive => Name switch
+    public bool IsPrimitive => Name.Replace("?", string.Empty) switch
     {
         "int" or "long" or "short" or "byte" or "float" or "double" or "decimal" or "bool" or "char" or "string" => true,
         _ => false
@@ -37,8 +37,8 @@ public record PropertyInfo(string Name, string Visibility, TypeInfo Type)
 
     public string GetRelationshipRepresentation(string objectName) => Relationship switch
     {
-        PropertyRelationship.Aggregation => $"    {Type.SanitizedName} --o {Name}\n",
-        PropertyRelationship.Composition => $"    {Type.SanitizedName} --* {Name}\n",
+        PropertyRelationship.Aggregation => $"    {Type.SanitizedName} --o {objectName}\n",
+        PropertyRelationship.Composition => $"    {Type.SanitizedName} --* {objectName}\n",
         _ => string.Empty
     };
 }
