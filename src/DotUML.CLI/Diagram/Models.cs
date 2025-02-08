@@ -66,12 +66,16 @@ public record MethodInfo(string Name, string Visibility, TypeInfo ReturnType)
 
 public record DependencyInfo(TypeInfo Type);
 
+public interface IHaveRelationships
+{
+    public string GetRelationshipRepresentation();
+}
+
 public abstract record ObjectInfo(string Name)
 {
     protected List<PropertyInfo> _properties = new();
     protected List<MethodInfo> _methods = new();
     public abstract string GetObjectRepresentation();
-    public abstract string GetRelationshipRepresentation();
     public void AddProperty(PropertyInfo property) => _properties.Add(property);
     public void AddMethod(MethodInfo method) => _methods.Add(method);
 }
@@ -93,11 +97,9 @@ public record EnumInfo(string Name) : ObjectInfo(Name)
     }
 
     public void AddValue(string value) => _values.Add(value);
-
-    public override string GetRelationshipRepresentation() => string.Empty;
 }
 
-public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
+public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name), IHaveRelationships
 {
     private readonly List<DependencyInfo> _dependencies = new();
 
@@ -113,7 +115,7 @@ public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
         return sb.ToString();
     }
 
-    public override string GetRelationshipRepresentation()
+    public string GetRelationshipRepresentation()
     {
         var sb = new IndentedStringBuilder();
         sb.AppendJoin(string.Empty, _dependencies.Select(d => $"    {Name} ..> {d.Type.SanitizedName}\n"));
@@ -131,7 +133,7 @@ public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
     }
 }
 
-public record InterfaceInfo(string Name) : ObjectInfo(Name)
+public record InterfaceInfo(string Name) : ObjectInfo(Name), IHaveRelationships
 {
     public override string GetObjectRepresentation()
     {
@@ -146,7 +148,7 @@ public record InterfaceInfo(string Name) : ObjectInfo(Name)
         return sb.ToString();
     }
 
-    public override string GetRelationshipRepresentation()
+    public string GetRelationshipRepresentation()
     {
         var sb = new IndentedStringBuilder();
         sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(Name)));

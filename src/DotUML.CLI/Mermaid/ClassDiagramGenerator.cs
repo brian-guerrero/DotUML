@@ -27,7 +27,7 @@ public class ClassDiagramGenerator
                 diagram.DecreaseIndent();
                 diagram.AppendLine("    }");
             }
-            ns.ObjectInfos.Select(o => o.GetRelationshipRepresentation()).ToList().ForEach(r => diagram.Append(r));
+            ns.ObjectInfos.OfType<IHaveRelationships>().Select(o => o.GetRelationshipRepresentation()).ToList().ForEach(r => diagram.Append(r));
         }
 
         diagram.Append("```");
