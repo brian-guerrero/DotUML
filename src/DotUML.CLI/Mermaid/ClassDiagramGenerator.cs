@@ -1,6 +1,5 @@
-using System.Text;
-
 using DotUML.CLI.Diagram;
+using DotUML.CLI.Text;
 
 namespace DotUML.CLI.Mermaid;
 
@@ -20,12 +19,15 @@ public class ClassDiagramGenerator
                 diagram.IncreaseIndent();
                 diagram.AppendLine($"namespace {ns.Name} {{");
             }
-            diagram.AppendJoin(string.Empty, ns.ObjectInfos.Select(o => o.GetDiagramRepresentation()));
+            diagram.IncreaseIndent();
+            ns.ObjectInfos.Select(o => o.GetObjectRepresentation()).ToList().ForEach(r => diagram.Append(r));
+            diagram.DecreaseIndent();
             if (!string.IsNullOrEmpty(ns.Name))
             {
                 diagram.DecreaseIndent();
                 diagram.AppendLine("    }");
             }
+            ns.ObjectInfos.Select(o => o.GetRelationshipRepresentation()).ToList().ForEach(r => diagram.Append(r));
         }
 
         diagram.Append("```");

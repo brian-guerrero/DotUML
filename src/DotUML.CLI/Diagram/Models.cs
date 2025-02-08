@@ -1,5 +1,6 @@
 using System.Collections;
-using System.Text;
+
+using DotUML.CLI.Text;
 
 namespace DotUML.CLI.Diagram;
 
@@ -69,9 +70,8 @@ public abstract record ObjectInfo(string Name)
 {
     protected List<PropertyInfo> _properties = new();
     protected List<MethodInfo> _methods = new();
-
-    public abstract string GetDiagramRepresentation();
-
+    public abstract string GetObjectRepresentation();
+    public abstract string GetRelationshipRepresentation();
     public void AddProperty(PropertyInfo property) => _properties.Add(property);
     public void AddMethod(MethodInfo method) => _methods.Add(method);
 }
@@ -80,20 +80,27 @@ public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
 {
     private readonly List<DependencyInfo> _dependencies = new();
 
-    public override string GetDiagramRepresentation()
+    public override string GetObjectRepresentation()
     {
-        var sb = new StringBuilder();
-        sb.AppendLine($"    class {Name} {{");
+        var sb = new IndentedStringBuilder();
+        sb.AppendLine($"class {Name} {{");
+        sb.IncreaseIndent();
         sb.AppendJoin(string.Empty, _properties.Select(p => p.GetDiagramRepresentation()));
         sb.AppendJoin(string.Empty, _methods.Select(m => m.GetDiagramRepresentation()));
-        sb.AppendLine("    }");
+        sb.DecreaseIndent();
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    public override string GetRelationshipRepresentation()
+    {
+        var sb = new IndentedStringBuilder();
         sb.AppendJoin(string.Empty, _dependencies.Select(d => $"    {Name} ..> {d.Type.SanitizedName}\n"));
         if (!string.IsNullOrEmpty(BaseClass))
         {
             sb.AppendLine($"    {BaseClass} <|-- {Name}");
         }
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(Name)));
-        return sb.ToString();
+        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(Name))); return sb.ToString();
     }
 
     internal void AddDependency(DependencyInfo dependencyInfo) => _dependencies.Add(dependencyInfo);
@@ -101,14 +108,23 @@ public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
 
 public record InterfaceInfo(string Name) : ObjectInfo(Name)
 {
-    public override string GetDiagramRepresentation()
+    public override string GetObjectRepresentation()
     {
-        var sb = new StringBuilder();
-        sb.AppendLine($"    class {Name} {{");
-        sb.AppendLine("        <<interface>>");
+        var sb = new IndentedStringBuilder();
+        sb.AppendLine($"class {Name} {{");
+        sb.IncreaseIndent();
+        sb.AppendLine("<<interface>>");
         sb.AppendJoin(string.Empty, _properties.Select(p => p.GetDiagramRepresentation()));
         sb.AppendJoin(string.Empty, _methods.Select(m => m.GetDiagramRepresentation()));
-        sb.AppendLine("    }");
+        sb.DecreaseIndent();
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    public override string GetRelationshipRepresentation()
+    {
+        var sb = new IndentedStringBuilder();
+        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(Name)));
         return sb.ToString();
     }
 }

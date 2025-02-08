@@ -1,13 +1,11 @@
-using System;
-
-namespace DotUML.CLI.Mermaid;
-
 using System.Text;
+
+namespace DotUML.CLI.Text;
 
 public class IndentedStringBuilder
 {
     private readonly StringBuilder _builder = new StringBuilder();
-    private int _indentLevel;
+    public int IndentLevel { get; private set; } = 0;
     private readonly string _indentString;
     public IndentedStringBuilder(string indentString = "    ")
     {
@@ -16,32 +14,32 @@ public class IndentedStringBuilder
 
     public IndentedStringBuilder IncreaseIndent()
     {
-        _indentLevel++;
+        IndentLevel++;
         return this;
     }
 
     public IndentedStringBuilder DecreaseIndent()
     {
-        if (_indentLevel > 0)
-            _indentLevel--;
+        if (IndentLevel > 0)
+            IndentLevel--;
         return this;
     }
 
     public IndentedStringBuilder AppendLine(string text)
     {
-        _builder.AppendLine($"{new string(' ', _indentLevel * _indentString.Length)}{text}");
+        _builder.AppendLine($"{new string(' ', IndentLevel * _indentString.Length)}{text}");
         return this;
     }
 
     public IndentedStringBuilder AppendJoin(string separator, IEnumerable<string> values)
     {
-        _builder.Append($"{new string(' ', _indentLevel * _indentString.Length)}{string.Join(separator, values)}");
+        _builder.Append($"{new string(' ', IndentLevel * _indentString.Length)}{string.Join(separator, values)}");
         return this;
     }
 
     public IndentedStringBuilder Append(string text)
     {
-        _builder.Append($"{new string(' ', _indentLevel * _indentString.Length)}{text}");
+        _builder.Append($"{new string(' ', IndentLevel * _indentString.Length)}{text}");
         return this;
     }
 
