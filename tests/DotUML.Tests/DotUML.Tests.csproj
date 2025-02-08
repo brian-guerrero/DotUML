@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\DotUML.CLI\DotUML.CLI.csproj" />
+    <ProjectReference Include="..\..\src\DotUML.CLI\DotUML.CLI.csproj" />
   </ItemGroup>
 
 </Project>
