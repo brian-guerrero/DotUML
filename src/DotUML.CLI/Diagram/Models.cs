@@ -66,19 +66,44 @@ public record MethodInfo(string Name, string Visibility, TypeInfo ReturnType)
 
 public record DependencyInfo(TypeInfo Type);
 
+public interface IHaveRelationships
+{
+    public string GetRelationshipRepresentation();
+}
+
 public abstract record ObjectInfo(string Name)
 {
     protected List<PropertyInfo> _properties = new();
     protected List<MethodInfo> _methods = new();
     public abstract string GetObjectRepresentation();
-    public abstract string GetRelationshipRepresentation();
     public void AddProperty(PropertyInfo property) => _properties.Add(property);
     public void AddMethod(MethodInfo method) => _methods.Add(method);
 }
 
-public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
+public record EnumInfo(string Name) : ObjectInfo(Name)
 {
+    private readonly List<string> _values = new();
+
+    public override string GetObjectRepresentation()
+    {
+        var sb = new IndentedStringBuilder();
+        sb.AppendLine($"class {Name} {{");
+        sb.IncreaseIndent();
+        sb.AppendLine("<<enumeration>>");
+        sb.AppendJoin("\n", _values.Select(p => p));
+        sb.DecreaseIndent();
+        sb.AppendLine("}");
+        return sb.ToString();
+    }
+
+    public void AddValue(string value) => _values.Add(value);
+}
+
+public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
+{
+    private string? BaseClass { get; set; }
     private readonly List<DependencyInfo> _dependencies = new();
+    private readonly List<string> _interfaces = new();
 
     public override string GetObjectRepresentation()
     {
@@ -92,15 +117,17 @@ public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
         return sb.ToString();
     }
 
-    public override string GetRelationshipRepresentation()
+    public string GetRelationshipRepresentation()
     {
         var sb = new IndentedStringBuilder();
-        sb.AppendJoin(string.Empty, _dependencies.Select(d => $"    {Name} ..> {d.Type.SanitizedName}\n"));
+        sb.AppendJoin(string.Empty, _dependencies.Select(d => $"{Name} ..> {d.Type.SanitizedName}\n"));
+        sb.AppendJoin(string.Empty, _interfaces.Select(i => $"{i} <|.. {Name}\n"));
         if (!string.IsNullOrEmpty(BaseClass))
         {
-            sb.AppendLine($"    {BaseClass} <|-- {Name}");
+            sb.AppendLine($"{BaseClass} <|-- {Name}");
         }
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(Name))); return sb.ToString();
+        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(Name)));
+        return sb.ToString();
     }
 
     internal void AddDependency(DependencyInfo dependencyInfo)
@@ -108,9 +135,19 @@ public record ClassInfo(string Name, string? BaseClass = "") : ObjectInfo(Name)
         if (dependencyInfo.Type.IsPrimitive) return;
         _dependencies.Add(dependencyInfo);
     }
+
+    internal void Implements(string interfaceName)
+    {
+        _interfaces.Add(interfaceName);
+    }
+
+    internal void Inherits(string baseClassName)
+    {
+        BaseClass = baseClassName;
+    }
 }
 
-public record InterfaceInfo(string Name) : ObjectInfo(Name)
+public record InterfaceInfo(string Name) : ObjectInfo(Name), IHaveRelationships
 {
     public override string GetObjectRepresentation()
     {
@@ -125,7 +162,7 @@ public record InterfaceInfo(string Name) : ObjectInfo(Name)
         return sb.ToString();
     }
 
-    public override string GetRelationshipRepresentation()
+    public string GetRelationshipRepresentation()
     {
         var sb = new IndentedStringBuilder();
         sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(Name)));
