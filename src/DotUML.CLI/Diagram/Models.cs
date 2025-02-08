@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Text;
 
-namespace DotUML.CLI.Models;
+namespace DotUML.CLI.Diagram;
 
 public record TypeInfo(string Name)
 {
@@ -27,7 +27,7 @@ public enum PropertyRelationship
 
 public record PropertyInfo(string Name, string Visibility, TypeInfo Type)
 {
-    public string GetDiagramRepresentation() => $"        {DiagramHelpers.GetVisibilityCharacter(Visibility)}{Name} : {Type.SanitizedName}\n";
+    public string GetDiagramRepresentation() => $"        {Helpers.GetVisibilityCharacter(Visibility)}{Name} : {Type.SanitizedName}\n";
 
     public PropertyRelationship Relationship => Type switch
     {
@@ -59,7 +59,7 @@ public record MethodInfo(string Name, string Visibility, TypeInfo ReturnType)
     public string GetDiagramRepresentation()
     {
         var returnType = ReturnType.Name.Contains("void") ? string.Empty : $" : {ReturnType.SanitizedName}";
-        return $"        {DiagramHelpers.GetVisibilityCharacter(Visibility)}{Name}({GetArguments()}){returnType}\n";
+        return $"        {Helpers.GetVisibilityCharacter(Visibility)}{Name}({GetArguments()}){returnType}\n";
     }
 }
 

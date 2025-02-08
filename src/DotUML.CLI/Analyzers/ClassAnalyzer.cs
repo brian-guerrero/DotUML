@@ -1,6 +1,6 @@
 
 
-using DotUML.CLI.Models;
+using DotUML.CLI.Diagram;
 
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
@@ -140,7 +140,7 @@ public class ClassAnalyzer
         {
             var parameterName = parameter.Identifier.Text;
             var parameterType = parameter.Type.ToString();
-            recordInfo?.AddProperty(new PropertyInfo(parameterName, "public", (Models.TypeInfo)parameterType));
+            recordInfo?.AddProperty(new PropertyInfo(parameterName, "public", (Diagram.TypeInfo)parameterType));
         }
 
     }
@@ -192,7 +192,7 @@ public class ClassAnalyzer
             foreach (var parameter in constructor.ParameterList.Parameters)
             {
                 var parameterType = parameter.Type.ToString();
-                classInfo?.AddDependency(new DependencyInfo((Models.TypeInfo)parameterType));
+                classInfo?.AddDependency(new DependencyInfo((Diagram.TypeInfo)parameterType));
             }
         }
     }
@@ -207,7 +207,7 @@ public class ClassAnalyzer
             var propertyType = property.Type.ToString();
             var accessibility = property.Modifiers.ToString();
             _logger.LogInformation($"Property accessibility: {accessibility}");
-            objectInformation.AddProperty(new PropertyInfo(propertyName, accessibility, (Models.TypeInfo)propertyType));
+            objectInformation.AddProperty(new PropertyInfo(propertyName, accessibility, (Diagram.TypeInfo)propertyType));
         }
     }
 
@@ -221,12 +221,12 @@ public class ClassAnalyzer
             var returnType = method.ReturnType.ToString();
             var accessibility = method.Modifiers.ToString();
             _logger.LogInformation($"Property accessibility: {accessibility}");
-            var methodInfo = new MethodInfo(methodName, accessibility, (Models.TypeInfo)returnType);
+            var methodInfo = new MethodInfo(methodName, accessibility, (Diagram.TypeInfo)returnType);
             foreach (var parameter in method.ParameterList.Parameters)
             {
                 var parameterName = parameter.Identifier.Text;
                 var parameterType = parameter.Type.ToString();
-                methodInfo.AddArgument(new MethodArgumentInfo(parameterName, (Models.TypeInfo)parameterType));
+                methodInfo.AddArgument(new MethodArgumentInfo(parameterName, (Diagram.TypeInfo)parameterType));
             }
             objectInformation.AddMethod(methodInfo);
         }

@@ -1,6 +1,6 @@
 using System.Text;
 
-using DotUML.CLI.Models;
+using DotUML.CLI.Diagram;
 
 namespace DotUML.CLI.Generators;
 
