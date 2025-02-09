@@ -28,4 +28,11 @@
     <ProjectReference Include="..\..\src\DotUML.CLI\DotUML.CLI.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\..\tests-solutions\**\*.*">
+      <Link>tests-solutions\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>
