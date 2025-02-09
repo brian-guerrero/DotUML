@@ -25,9 +25,20 @@ public class ClassAnalyzer
         // https://github.com/dotnet/roslyn/issues/17974#issuecomment-624408861
         if (!MSBuildLocator.IsRegistered)
         {
-            _logger.LogInformation("Registering MSBuild defaults...");
-            var instance = MSBuildLocator.QueryVisualStudioInstances().First();
-            MSBuildLocator.RegisterInstance(instance);
+            try
+            {
+                _logger.LogInformation("Registering MSBuild defaults...");
+                var instance = MSBuildLocator.QueryVisualStudioInstances().First();
+                MSBuildLocator.RegisterInstance(instance);
+            }
+            catch (InvalidOperationException ie) when (ie.Message.Contains("MSBuild assemblies were already loaded."))
+            {
+                _logger.LogWarning("MSBuild is already registered.");
+            }
+            catch (Exception e)
+            {
+                _logger.LogError($"Error registering MSBuild: {e.Message}");
+            }
         }
         using (var workspace = MSBuildWorkspace.Create())
         {
