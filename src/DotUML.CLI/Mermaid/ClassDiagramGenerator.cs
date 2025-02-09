@@ -1,10 +1,19 @@
 using DotUML.CLI.Diagram;
 using DotUML.CLI.Text;
 
+using Microsoft.Extensions.Logging;
+
 namespace DotUML.CLI.Mermaid;
 
 public class ClassDiagramGenerator
 {
+    private readonly ILogger<ClassDiagramGenerator> _logger;
+
+    public ClassDiagramGenerator(ILogger<ClassDiagramGenerator> logger)
+    {
+        _logger = logger;
+    }
+
     public string GenerateDiagram(Namespaces namespaces)
     {
         var diagram = new IndentedStringBuilder();
@@ -49,6 +58,6 @@ public class ClassDiagramGenerator
     public void WriteToReadme(string outputPath, string content)
     {
         File.WriteAllText(outputPath, content);
-        Console.WriteLine($"Mermaid UML diagram written to {outputPath}");
+        _logger.LogCritical($"Mermaid UML diagram written to {outputPath}");
     }
 }
