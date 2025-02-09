@@ -33,13 +33,20 @@ public class IndentedStringBuilder
 
     public IndentedStringBuilder AppendJoin(string separator, IEnumerable<string> values)
     {
-        _builder.Append($"{new string(' ', IndentLevel * _indentString.Length)}{string.Join(separator, values)}");
+        foreach (var value in values)
+        {
+            _builder.AppendLine($"{new string(' ', IndentLevel * _indentString.Length)}{value}");
+        }
         return this;
     }
 
     public IndentedStringBuilder Append(string text)
     {
-        _builder.Append($"{new string(' ', IndentLevel * _indentString.Length)}{text}");
+        var lines = text.Split(Environment.NewLine);
+        foreach (var line in lines)
+        {
+            _builder.AppendLine($"{new string(' ', IndentLevel * _indentString.Length)}{line}");
+        }
         return this;
     }
 
@@ -48,4 +55,3 @@ public class IndentedStringBuilder
         return _builder.ToString();
     }
 }
-
