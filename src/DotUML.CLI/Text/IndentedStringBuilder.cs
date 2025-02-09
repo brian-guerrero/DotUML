@@ -42,7 +42,7 @@ public class IndentedStringBuilder
 
     public IndentedStringBuilder Append(string text)
     {
-        var lines = text.Split('\n');
+        var lines = text.Split(Environment.NewLine);
         foreach (var line in lines)
         {
             _builder.AppendLine($"{new string(' ', IndentLevel * _indentString.Length)}{line}");

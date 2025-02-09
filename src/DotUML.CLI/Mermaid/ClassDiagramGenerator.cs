@@ -10,6 +10,7 @@ public class ClassDiagramGenerator
         var diagram = new IndentedStringBuilder();
         diagram.AppendLine("```mermaid");
         diagram.AppendLine("classDiagram");
+        diagram.IncreaseIndent();
 
         foreach (var ns in namespaces)
         {
@@ -21,7 +22,7 @@ public class ClassDiagramGenerator
 
             foreach (var obj in ns.ObjectInfos)
             {
-                diagram.Append(obj.GetObjectRepresentation());
+                diagram.Append(obj.GetObjectRepresentation().Trim());
             }
 
             if (!string.IsNullOrEmpty(ns.Name))
@@ -31,14 +32,16 @@ public class ClassDiagramGenerator
             }
         }
 
-        foreach (var ns in namespaces)
+
+        foreach (var obj in namespaces.SelectMany(ns => ns.ObjectInfos.OfType<IHaveRelationships>()))
         {
-            foreach (var obj in ns.ObjectInfos.OfType<IHaveRelationships>())
+            if (!string.IsNullOrWhiteSpace(obj.GetRelationshipRepresentation()))
             {
-                diagram.Append(obj.GetRelationshipRepresentation());
+                diagram.Append(obj.GetRelationshipRepresentation().Trim());
             }
         }
 
+        diagram.DecreaseIndent();
         diagram.AppendLine("```");
         return diagram.ToString();
     }

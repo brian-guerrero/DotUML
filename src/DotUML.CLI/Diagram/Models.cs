@@ -28,7 +28,7 @@ public enum PropertyRelationship
 
 public record PropertyInfo(string Name, string Visibility, TypeInfo Type)
 {
-    public string GetDiagramRepresentation() => $"        {Helpers.GetVisibilityCharacter(Visibility)}{Name} : {Type.SanitizedName}\n";
+    public string GetDiagramRepresentation() => $"{Helpers.GetVisibilityCharacter(Visibility)}{Name} : {Type.SanitizedName}";
 
     public PropertyRelationship Relationship => Type switch
     {
@@ -39,8 +39,8 @@ public record PropertyInfo(string Name, string Visibility, TypeInfo Type)
 
     public string GetRelationshipRepresentation(string objectName) => Relationship switch
     {
-        PropertyRelationship.Aggregation => $"    {Type.SanitizedName} --o {objectName}\n",
-        PropertyRelationship.Composition => $"    {Type.SanitizedName} --* {objectName}\n",
+        PropertyRelationship.Aggregation => $"{Type.SanitizedName} --o {objectName}",
+        PropertyRelationship.Composition => $"{Type.SanitizedName} --* {objectName}",
         _ => string.Empty
     };
 }
@@ -60,7 +60,7 @@ public record MethodInfo(string Name, string Visibility, TypeInfo ReturnType)
     public string GetDiagramRepresentation()
     {
         var returnType = ReturnType.Name.Contains("void") ? string.Empty : $" : {ReturnType.SanitizedName}";
-        return $"        {Helpers.GetVisibilityCharacter(Visibility)}{Name}({GetArguments()}){returnType}\n";
+        return $"{Helpers.GetVisibilityCharacter(Visibility)}{Name}({GetArguments()}){returnType}";
     }
 }
 
@@ -90,7 +90,7 @@ public record EnumInfo(string Name) : ObjectInfo(Name)
         sb.AppendLine($"class {Name} {{");
         sb.IncreaseIndent();
         sb.AppendLine("<<enumeration>>");
-        sb.AppendJoin("\n", _values.Select(p => p));
+        sb.AppendJoin("", _values.Select(p => p));
         sb.DecreaseIndent();
         sb.AppendLine("}");
         return sb.ToString();
@@ -120,8 +120,8 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
     public string GetRelationshipRepresentation()
     {
         var sb = new IndentedStringBuilder();
-        sb.AppendJoin(string.Empty, _dependencies.Select(d => $"{Name} ..> {d.Type.SanitizedName}\n"));
-        sb.AppendJoin(string.Empty, _interfaces.Select(i => $"{i} <|.. {Name}\n"));
+        sb.AppendJoin(string.Empty, _dependencies.Select(d => $"{Name} ..> {d.Type.SanitizedName}"));
+        sb.AppendJoin(string.Empty, _interfaces.Select(i => $"{i} <|.. {Name}"));
         if (!string.IsNullOrEmpty(BaseClass))
         {
             sb.AppendLine($"{BaseClass} <|-- {Name}");
