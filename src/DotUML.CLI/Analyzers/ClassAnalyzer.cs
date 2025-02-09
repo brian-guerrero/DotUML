@@ -35,6 +35,8 @@ public class ClassAnalyzer
             {
                 if (e.Diagnostic.Kind == WorkspaceDiagnosticKind.Failure)
                     _logger.LogError($"Workspace error: {e.Diagnostic.Message}");
+                if (e.Diagnostic.Kind == WorkspaceDiagnosticKind.Warning)
+                    _logger.LogWarning($"Workspace warning: {e.Diagnostic.Message}");
             };
             _logger.LogInformation($"Opening solution: {solutionFilePath}");
             var solution = await workspace.OpenSolutionAsync(solutionFilePath);
