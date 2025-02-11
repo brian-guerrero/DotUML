@@ -22,8 +22,9 @@ jobs:
         run: dotnet pack -c Release -o nupkg
         
       - name: Publish NuGet package
+        env:
+          API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
-          dotnet nuget push ./nupkg/*.nupkg 
-          --api-key ${{ secrets.NUGET_API_KEY }} 
-          --source https://api.nuget.org/v3/index.json
+          dotnet nuget push ./nupkg/*.nupkg --api-key $API_KEY --source 'https://api.nuget.org/v3/index.json'
       
+
