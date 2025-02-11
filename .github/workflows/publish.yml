@@ -1,0 +1,22 @@
+name: .NET Pack and Publish Tool
+
+on: 
+  push:
+    tags:
+      - v*
+
+jobs:
+  publish_nuget_package:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Package NuGet package
+        run: dotnet pack -c Release
+      - name: Publish NuGet package
+        run: |
+          dotnet nuget push ./bin/Release/*.nupkg 
+          --api-key ${{ secrets.NUGET_API_KEY }} 
+          --source https://api.nuget.org/v3/index.json
+      
