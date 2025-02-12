@@ -45,7 +45,7 @@ namespace DotUML.Tests.Tests
             Console.WriteLine($"Solution Path: {solution}");
             Console.WriteLine($"Base Directory: {baseDirectory}");
             // Act
-            await _generateCommands.Generate(solution, outputPath, OutputType.Markdown);
+            await _generateCommands.Generate(solution, OutputType.Markdown, outputPath);
 
             // Assert
             Assert.True(File.Exists(outputPath));
@@ -64,7 +64,7 @@ namespace DotUML.Tests.Tests
             Console.WriteLine($"Solution Path: {solution}");
             Console.WriteLine($"Base Directory: {baseDirectory}");
             // Act
-            await _generateCommands.Generate(solution, outputPath, OutputType.Image);
+            await _generateCommands.Generate(solution, OutputType.Image, outputPath);
 
             // Assert
             Assert.True(File.Exists(outputPath));

@@ -16,23 +16,24 @@ public partial class GenerateCommands
         _diagramGenerators = diagramGenerators;
     }
 
+    public const string DefaultOutputFileName = "diagramyyyyMMddHHmmss.md";
     /// <summary>
     /// Generate a class diagram from a solution and write it to a file.
     /// </summary>
     /// <param name="solution">-s, Solution to analyze and generate UML diagram for.</param>
     /// <param name="outputFile">-o, Target location for UML file output.</param>
-    /// <param name="outputType">-t, Output type for the diagram. Options: Markdown, Image</param>
-    public async Task Generate(string solution, string? outputFile = "", OutputType outputType = OutputType.Image)
+    /// <param name="format">-f, Output type for the diagram. Options: markdown, image</param>
+    public async Task Generate(string solution, OutputType format = OutputType.Markdown, string? outputFile = DefaultOutputFileName)
     {
         if (string.IsNullOrEmpty(solution))
         {
             Console.WriteLine("Please provide a solution path.");
             return;
         }
-        if (string.IsNullOrEmpty(outputFile))
+        if (string.IsNullOrEmpty(outputFile) || outputFile == DefaultOutputFileName)
         {
             string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
-            var extension = outputType switch
+            var extension = format switch
             {
                 OutputType.Markdown => "md",
                 OutputType.Image => "png",
@@ -40,7 +41,7 @@ public partial class GenerateCommands
             };
             outputFile = $"diagram{timestamp}.{extension}";
         }
-        var mermaidDiagramGenerator = _diagramGenerators.FirstOrDefault(g => g.OutputType == outputType);
+        var mermaidDiagramGenerator = _diagramGenerators.FirstOrDefault(g => g.OutputType == format);
         if (mermaidDiagramGenerator == null)
         {
             throw new ArgumentException("Invalid output type.");
