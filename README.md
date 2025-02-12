@@ -43,6 +43,15 @@ or
 dotuml generate --solution C:\source\repos\Solution\Awesome.sln
 ```
 
+The following options are available on the method.
+
+
+| Option                  | Description                                                                                                                                               |
+|-------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `-s` `--solution`       | Solution to analyze and generate UML diagram for. (Required)                                                                                              |
+| `-f` `--format`         | Output type for the diagram. Options: markdown, image (Default: Markdown)                                                                                  |
+| `-o` `--output-file`    | Target location for UML file output. If a location is not provided, then a filename including a timestamp will be created in the current directory. (Default: `@"diagramyyyyMMddHHmmss.md"`) |
+
 ### Contributing
 Contributions are welcome! Please fork the repository and submit a pull request.
 
