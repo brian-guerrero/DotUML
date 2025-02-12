@@ -195,6 +195,39 @@ public class Namespaces : IGrouping<string, NamespaceInfo>
         }
     }
 
+    public string GetUMLDiagram()
+    {
+        var sb = new IndentedStringBuilder();
+        foreach (var ns in this)
+        {
+            if (!string.IsNullOrEmpty(ns.Name))
+            {
+                sb.AppendLine($"namespace {ns.Name} {{");
+                sb.IncreaseIndent();
+            }
+
+            foreach (var obj in ns.ObjectInfos)
+            {
+                sb.Append(obj.GetObjectRepresentation().Trim());
+            }
+
+            if (!string.IsNullOrEmpty(ns.Name))
+            {
+                sb.DecreaseIndent();
+                sb.AppendLine("}");
+            }
+        }
+
+        foreach (var obj in this.SelectMany(ns => ns.ObjectInfos.OfType<IHaveRelationships>()))
+        {
+            if (!string.IsNullOrWhiteSpace(obj.GetRelationshipRepresentation()))
+            {
+                sb.Append(obj.GetRelationshipRepresentation().Trim());
+            }
+        }
+        return sb.ToString();
+    }
+
     public string Key { get; }
 
     public IEnumerator<NamespaceInfo> GetEnumerator() => _namespaces.GetEnumerator();

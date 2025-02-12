@@ -33,6 +33,6 @@ public class GenerateCommands
         }
         var classes = await _classAnalyzer.ExtractClassesFromSolutionAsync(solution);
         var diagram = _classDiagramGenerator.GenerateDiagram(classes);
-        _classDiagramGenerator.WriteToReadme(outputFile, diagram);
+        _classDiagramGenerator.WriteToFile(outputFile, diagram);
     }
 }
