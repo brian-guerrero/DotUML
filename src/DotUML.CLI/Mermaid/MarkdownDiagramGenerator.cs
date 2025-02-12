@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+
 using DotUML.CLI.Diagram;
 using DotUML.CLI.Text;
 
@@ -5,14 +7,16 @@ using Microsoft.Extensions.Logging;
 
 namespace DotUML.CLI.Mermaid;
 
-public class ClassDiagramGenerator
+public class MarkdownDiagramGenerator : IGenerateMermaidDiagram
 {
-    private readonly ILogger<ClassDiagramGenerator> _logger;
+    private readonly ILogger<MarkdownDiagramGenerator> _logger;
 
-    public ClassDiagramGenerator(ILogger<ClassDiagramGenerator> logger)
+    public MarkdownDiagramGenerator(ILogger<MarkdownDiagramGenerator> logger)
     {
         _logger = logger;
     }
+
+    public OutputType OutputType => OutputType.Markdown;
 
     public string GenerateDiagram(Namespaces namespaces)
     {
@@ -28,9 +32,9 @@ public class ClassDiagramGenerator
         return diagram.ToString();
     }
 
-    public void WriteToFile(string outputPath, string content)
+    public async Task WriteToFile(string outputPath, string content)
     {
-        File.WriteAllText(outputPath, content);
+        await File.WriteAllTextAsync(outputPath, content);
         _logger.LogCritical($"Mermaid UML diagram written to {outputPath}");
     }
 }

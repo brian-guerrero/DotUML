@@ -18,7 +18,8 @@ app
     .ConfigureServices((services) =>
     {
         services.AddTransient<ClassAnalyzer>();
-        services.AddTransient<ClassDiagramGenerator>();
+        services.AddTransient<IGenerateMermaidDiagram, MarkdownDiagramGenerator>();
+        services.AddTransient<IGenerateMermaidDiagram, ImageDiagramGenerator>();
     });
 
 
