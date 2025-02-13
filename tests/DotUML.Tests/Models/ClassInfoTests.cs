@@ -9,7 +9,7 @@ namespace DotUML.Tests.Models;
 public class ClassInfoTests
 {
     [Fact]
-    public void Test1()
+    public void ClassInfo_ShouldSanitizeGenericsInObjectRepresentation()
     {
         // Arrange
         var classInfo = new ClassInfo("Class<Generic>");

@@ -1,6 +1,9 @@
+using System.Text.Encodings.Web;
 using System.Threading.Tasks;
+
 using DotUML.CLI.Diagram;
 using DotUML.CLI.Text;
+
 using Microsoft.Extensions.Logging;
 
 namespace DotUML.CLI.Mermaid;
@@ -14,7 +17,7 @@ public class HtmlDiagramGenerator : IGenerateMermaidDiagram
         _logger = logger;
     }
 
-    public OutputType OutputType => OutputType.Html;
+    public OutputType OutputType => OutputType.HTML;
 
     public string GenerateDiagram(Namespaces namespaces)
     {
@@ -37,7 +40,7 @@ public class HtmlDiagramGenerator : IGenerateMermaidDiagram
         diagram.AppendLine("<div class=\"mermaid\">");
         diagram.IncreaseIndent();
         diagram.AppendLine("classDiagram");
-        diagram.Append(namespaces.GetUMLDiagram());
+        diagram.Append(HtmlEncoder.Default.Encode(namespaces.GetUMLDiagram()));
         diagram.DecreaseIndent();
         diagram.AppendLine("</div>");
         diagram.DecreaseIndent();

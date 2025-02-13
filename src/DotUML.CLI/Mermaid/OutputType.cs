@@ -4,5 +4,5 @@ public enum OutputType
 {
     Markdown,
     Image,
-    Html
+    HTML
 }
