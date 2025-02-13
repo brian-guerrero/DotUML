@@ -93,7 +93,7 @@ namespace DotUML.Tests.Tests
             Assert.True(File.Exists(outputPath));
             var content = await File.ReadAllTextAsync(outputPath);
             Assert.Contains("<!DOCTYPE html>", content);
-            Assert.Contains("<div class=\"mermaid\">", content);
+            Assert.Contains("<pre class=\"mermaid\">", content);
         }
     }
 }
