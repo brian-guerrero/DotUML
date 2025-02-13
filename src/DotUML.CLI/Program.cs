@@ -20,6 +20,7 @@ app
         services.AddTransient<ClassAnalyzer>();
         services.AddTransient<IGenerateMermaidDiagram, MarkdownDiagramGenerator>();
         services.AddTransient<IGenerateMermaidDiagram, ImageDiagramGenerator>();
+        services.AddTransient<IGenerateMermaidDiagram, HtmlDiagramGenerator>();
     });
 
 
