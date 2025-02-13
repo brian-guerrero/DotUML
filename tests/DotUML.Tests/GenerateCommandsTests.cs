@@ -19,6 +19,8 @@ namespace DotUML.Tests.Tests
         private readonly MarkdownDiagramGenerator _classDiagramGenerator;
         private readonly ILogger<ImageDiagramGenerator> _imageDiagramGeneratorLogger;
         private readonly ImageDiagramGenerator _imageDiagramGenerator;
+        private readonly ILogger<HtmlDiagramGenerator> _htmlDiagramGeneratorLogger;
+        private readonly HtmlDiagramGenerator _htmlDiagramGenerator;
         private readonly GenerateCommands _generateCommands;
 
         public GenerateCommandsTestsTest()
@@ -29,7 +31,9 @@ namespace DotUML.Tests.Tests
             _classDiagramGenerator = new MarkdownDiagramGenerator(_classDiagramGeneratorLogger);
             _imageDiagramGeneratorLogger = Substitute.For<ILogger<ImageDiagramGenerator>>();
             _imageDiagramGenerator = new ImageDiagramGenerator(_imageDiagramGeneratorLogger);
-            _generateCommands = new GenerateCommands(_classAnalyzer, [_classDiagramGenerator, _imageDiagramGenerator]);
+            _htmlDiagramGeneratorLogger = Substitute.For<ILogger<HtmlDiagramGenerator>>();
+            _htmlDiagramGenerator = new HtmlDiagramGenerator(_htmlDiagramGeneratorLogger);
+            _generateCommands = new GenerateCommands(_classAnalyzer, new IGenerateMermaidDiagram[] { _classDiagramGenerator, _imageDiagramGenerator, _htmlDiagramGenerator });
         }
 
         [Fact]
@@ -68,6 +72,28 @@ namespace DotUML.Tests.Tests
 
             // Assert
             Assert.True(File.Exists(outputPath));
+        }
+
+        [Fact]
+        public async Task GenerateCommands_ShouldCreateHtmlFile()
+        {
+            // Arrange
+            var outputPath = Path.Combine(Path.GetTempPath(), "diagram.html");
+            var baseDirectory = AppContext.BaseDirectory;
+            Console.WriteLine($"Base Directory: {baseDirectory}");
+
+            var solution = Path.Combine(baseDirectory, @"..", "..", "..", "..", "..", "test-solutions", "SampleWeb.sln");
+            solution = Path.GetFullPath(solution);
+            Console.WriteLine($"Solution Path: {solution}");
+            Console.WriteLine($"Base Directory: {baseDirectory}");
+            // Act
+            await _generateCommands.Generate(solution, OutputType.Html, outputPath);
+
+            // Assert
+            Assert.True(File.Exists(outputPath));
+            var content = await File.ReadAllTextAsync(outputPath);
+            Assert.Contains("<!DOCTYPE html>", content);
+            Assert.Contains("<div class=\"mermaid\">", content);
         }
     }
 }

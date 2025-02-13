@@ -22,7 +22,7 @@ public partial class GenerateCommands
     /// </summary>
     /// <param name="solution">-s, Solution to analyze and generate UML diagram for.</param>
     /// <param name="outputFile">-o, Target location for UML file output. If a location is not provided, then a filename including a timestamp will be created in the current directory.</param>
-    /// <param name="format">-f, Output type for the diagram. Options: markdown, image</param>
+    /// <param name="format">-f, Output type for the diagram. Options: markdown, image, html</param>
     public async Task Generate(string solution, OutputType format = OutputType.Markdown, string? outputFile = DefaultOutputFileName)
     {
         if (string.IsNullOrEmpty(solution))
@@ -37,6 +37,7 @@ public partial class GenerateCommands
             {
                 OutputType.Markdown => "md",
                 OutputType.Image => "png",
+                OutputType.Html => "html",
                 _ => throw new ArgumentException("Invalid output type.")
             };
             outputFile = $"diagram{timestamp}.{extension}";
