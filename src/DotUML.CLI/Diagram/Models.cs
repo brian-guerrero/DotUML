@@ -7,17 +7,15 @@ namespace DotUML.CLI.Diagram;
 public record TypeInfo(string Name)
 {
     public string SanitizedName => Name.Replace('<', '~').Replace('>', '~');
-
-    public bool IsList => Name.StartsWith("List<");
-
-    public bool IsPrimitive => Name.Replace("?", string.Empty) switch
-    {
-        "int" or "long" or "short" or "byte" or "float" or "double" or "decimal" or "bool" or "char" or "string" => true,
-        _ => false
-    };
-
-    public static explicit operator TypeInfo(string name) => new TypeInfo(name);
 }
+
+public record CreatedType(string Name) : TypeInfo(Name);
+
+public record PrimitiveType(string Name) : TypeInfo(Name);
+
+public record AggregateType(string Name, TypeInfo AggregatedType) : TypeInfo(Name);
+
+public record NullableType(string Name, TypeInfo ElementType) : TypeInfo(Name);
 
 public enum PropertyRelationship
 {
@@ -30,19 +28,16 @@ public record PropertyInfo(string Name, string Visibility, TypeInfo Type)
 {
     public string GetDiagramRepresentation() => $"{Helpers.GetVisibilityCharacter(Visibility)}{Name} : {Type.SanitizedName}";
 
-    public PropertyRelationship Relationship => Type switch
+    public string GetRelationshipRepresentation(string parentName)
     {
-        { IsList: true } => PropertyRelationship.Composition,
-        { IsPrimitive: false } => PropertyRelationship.Aggregation,
-        _ => PropertyRelationship.None
-    };
-
-    public string GetRelationshipRepresentation(string objectName) => Relationship switch
-    {
-        PropertyRelationship.Aggregation => $"{Type.SanitizedName} --o {objectName}",
-        PropertyRelationship.Composition => $"{Type.SanitizedName} --* {objectName}",
-        _ => string.Empty
-    };
+        return Type switch
+        {
+            AggregateType aggregateType when aggregateType.AggregatedType is not PrimitiveType => $"{parentName} o-- {aggregateType.AggregatedType.SanitizedName}",
+            CreatedType => $"{parentName} --> {Type.SanitizedName}",
+            NullableType nullableType when nullableType.ElementType is not PrimitiveType => $"{parentName} --> \"0..1\" {nullableType.ElementType.SanitizedName}",
+            _ => string.Empty
+        };
+    }
 }
 
 public record MethodArgumentInfo(string Name, TypeInfo Type)
@@ -133,7 +128,7 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
 
     internal void AddDependency(DependencyInfo dependencyInfo)
     {
-        if (dependencyInfo.Type.IsPrimitive) return;
+        if (dependencyInfo.Type is PrimitiveType) return;
         _dependencies.Add(dependencyInfo);
     }
 
@@ -219,12 +214,9 @@ public class Namespaces : IGrouping<string, NamespaceInfo>
             }
         }
 
-        foreach (var obj in this.SelectMany(ns => ns.ObjectInfos.OfType<IHaveRelationships>()))
+        foreach (var relationship in this.SelectMany(ns => ns.ObjectInfos.OfType<IHaveRelationships>().Select(s => s.GetRelationshipRepresentation()).Distinct().Where(s => !string.IsNullOrWhiteSpace(s))))
         {
-            if (!string.IsNullOrWhiteSpace(obj.GetRelationshipRepresentation()))
-            {
-                sb.Append(obj.GetRelationshipRepresentation().Trim());
-            }
+            sb.Append(relationship.Trim());
         }
         return sb.ToString();
     }
