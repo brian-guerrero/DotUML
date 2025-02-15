@@ -102,7 +102,7 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
 {
     private TypeInfo? BaseClass { get; set; }
     private readonly List<DependencyInfo> _dependencies = new();
-    private readonly List<string> _interfaces = new();
+    private readonly List<TypeInfo> _interfaces = new();
 
     public override string GetObjectRepresentation()
     {
@@ -127,7 +127,7 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
         var sb = new IndentedStringBuilder();
         foreach (var @interface in _interfaces)
         {
-            sb.AppendLine($"{@interface} <|.. {SanitizedName}");
+            sb.AppendLine($"{@interface.SanitizedName} <|.. {SanitizedName}");
         }
         if (BaseClass is not null)
         {
@@ -150,7 +150,7 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
         _dependencies.Add(dependencyInfo);
     }
 
-    internal void Implements(string interfaceName)
+    internal void Implements(TypeInfo interfaceName)
     {
         _interfaces.Add(interfaceName);
     }

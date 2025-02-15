@@ -169,7 +169,7 @@ public class ClassAnalyzer
                 var symbol = semanticModel.GetSymbolInfo(baseRecord.Type).Symbol;
                 if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind == TypeKind.Interface)
                 {
-                    objectInfo.Implements(namedTypeSymbol.Name);
+                    objectInfo.Implements(TypeSyntaxAnalyzer.GetTypeInfo(baseRecord.Type));
                     yield return new InterfaceInfo(namedTypeSymbol.Name);
                 }
                 else
