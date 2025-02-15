@@ -174,7 +174,7 @@ public class ClassAnalyzer
                 }
                 else
                 {
-                    objectInfo.Inherits(baseRecord.Type.ToString());
+                    objectInfo.Inherits(TypeSyntaxAnalyzer.GetTypeInfo(baseRecord.Type));
                     yield return new ClassInfo(baseRecord.Type.ToString());
                 }
             }

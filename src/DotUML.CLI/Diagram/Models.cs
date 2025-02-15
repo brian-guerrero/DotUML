@@ -100,7 +100,7 @@ public record EnumInfo(string Name) : ObjectInfo(Name)
 
 public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
 {
-    private string? BaseClass { get; set; }
+    private TypeInfo? BaseClass { get; set; }
     private readonly List<DependencyInfo> _dependencies = new();
     private readonly List<string> _interfaces = new();
 
@@ -129,9 +129,9 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
         {
             sb.AppendLine($"{@interface} <|.. {SanitizedName}");
         }
-        if (!string.IsNullOrEmpty(BaseClass))
+        if (BaseClass is not null)
         {
-            sb.AppendLine($"{BaseClass} <|-- {SanitizedName}");
+            sb.AppendLine($"{BaseClass.SanitizedName} <|-- {SanitizedName}");
         }
         foreach (var property in _properties.Where(p => p.Type is not PrimitiveType))
         {
@@ -155,9 +155,9 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
         _interfaces.Add(interfaceName);
     }
 
-    internal void Inherits(string baseClassName)
+    internal void Inherits(TypeInfo baseClass)
     {
-        BaseClass = baseClassName;
+        BaseClass = baseClass;
     }
 }
 
