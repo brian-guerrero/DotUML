@@ -86,7 +86,10 @@ public record EnumInfo(string Name) : ObjectInfo(Name)
         sb.AppendLine($"class {SanitizedName} {{");
         sb.IncreaseIndent();
         sb.AppendLine("<<enumeration>>");
-        sb.AppendJoin("", _values.Select(p => p));
+        foreach (var value in _values)
+        {
+            sb.AppendLine(value);
+        }
         sb.DecreaseIndent();
         sb.AppendLine("}");
         return sb.ToString();
@@ -106,8 +109,14 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
         var sb = new IndentedStringBuilder();
         sb.AppendLine($"class {SanitizedName} {{");
         sb.IncreaseIndent();
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetDiagramRepresentation()));
-        sb.AppendJoin(string.Empty, _methods.Select(m => m.GetDiagramRepresentation()));
+        foreach (var property in _properties)
+        {
+            sb.AppendLine(property.GetDiagramRepresentation());
+        }
+        foreach (var method in _methods)
+        {
+            sb.AppendLine(method.GetDiagramRepresentation());
+        }
         sb.DecreaseIndent();
         sb.AppendLine("}");
         return sb.ToString();
@@ -116,13 +125,22 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
     public string GetRelationshipRepresentation()
     {
         var sb = new IndentedStringBuilder();
-        sb.AppendJoin(string.Empty, _dependencies.Select(d => $"{SanitizedName} ..> {d.Type.SanitizedName}"));
-        sb.AppendJoin(string.Empty, _interfaces.Select(i => $"{i} <|.. {SanitizedName}"));
+        foreach (var @interface in _interfaces)
+        {
+            sb.AppendLine($"{@interface} <|.. {SanitizedName}");
+        }
         if (!string.IsNullOrEmpty(BaseClass))
         {
             sb.AppendLine($"{BaseClass} <|-- {SanitizedName}");
         }
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(SanitizedName)));
+        foreach (var property in _properties.Where(p => p.Type is not PrimitiveType))
+        {
+            var relationship = property.GetRelationshipRepresentation(SanitizedName);
+            if (!string.IsNullOrWhiteSpace(relationship))
+            {
+                sb.AppendLine(relationship);
+            }
+        }
         return sb.ToString();
     }
 
@@ -151,8 +169,14 @@ public record InterfaceInfo(string Name) : ObjectInfo(Name), IHaveRelationships
         sb.AppendLine($"class {SanitizedName} {{");
         sb.IncreaseIndent();
         sb.AppendLine("<<interface>>");
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetDiagramRepresentation()));
-        sb.AppendJoin(string.Empty, _methods.Select(m => m.GetDiagramRepresentation()));
+        foreach (var property in _properties)
+        {
+            sb.AppendLine(property.GetDiagramRepresentation());
+        }
+        foreach (var method in _methods)
+        {
+            sb.AppendLine(method.GetDiagramRepresentation());
+        }
         sb.DecreaseIndent();
         sb.AppendLine("}");
         return sb.ToString();
@@ -161,7 +185,14 @@ public record InterfaceInfo(string Name) : ObjectInfo(Name), IHaveRelationships
     public string GetRelationshipRepresentation()
     {
         var sb = new IndentedStringBuilder();
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(SanitizedName)));
+        foreach (var property in _properties.Where(p => p.Type is not PrimitiveType))
+        {
+            var relationship = property.GetRelationshipRepresentation(SanitizedName);
+            if (!string.IsNullOrWhiteSpace(relationship))
+            {
+                sb.AppendLine(relationship);
+            }
+        }
         return sb.ToString();
     }
 }
@@ -214,7 +245,7 @@ public class Namespaces : IGrouping<string, NamespaceInfo>
             }
         }
 
-        foreach (var relationship in this.SelectMany(ns => ns.ObjectInfos.OfType<IHaveRelationships>().Select(s => s.GetRelationshipRepresentation()).Distinct().Where(s => !string.IsNullOrWhiteSpace(s))))
+        foreach (var relationship in this.SelectMany(ns => ns.ObjectInfos.OfType<IHaveRelationships>().Select(s => s.GetRelationshipRepresentation()).Where(s => !string.IsNullOrWhiteSpace(s))))
         {
             sb.Append(relationship.Trim());
         }
