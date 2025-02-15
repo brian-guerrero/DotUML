@@ -134,7 +134,7 @@ public class ClassAnalyzer
         ;
     }
 
-    private IEnumerable<ObjectInfo> AnalyzeRecords(SyntaxNode root, SemanticModel semanticModel)
+    private IEnumerable<ClassInfo> AnalyzeRecords(SyntaxNode root, SemanticModel semanticModel)
     {
         foreach (var recordNode in root.DescendantNodes().OfType<RecordDeclarationSyntax>())
         {
@@ -147,10 +147,8 @@ public class ClassAnalyzer
             string className = recordNode.Identifier.Text;
             var baseRecords = recordNode.BaseList?.Types.OfType<BaseTypeSyntax>();
             var recordInfo = new ClassInfo(className);
-            foreach (var baseObject in ExtractBaseObjects(semanticModel, baseRecords, recordInfo))
-            {
-                yield return baseObject;
-            }
+            ExtractBaseObjects(semanticModel, baseRecords, recordInfo);
+
             AnalyzePropertiesFromRecordConstructor(recordNode.ParameterList, recordInfo);
             AnalyzePropertiesForObjectInfo(recordNode.Members, recordInfo!);
             AnalyzeFieldForObjectInfo(recordNode.Members, recordInfo);
@@ -160,7 +158,7 @@ public class ClassAnalyzer
         }
     }
 
-    private static IEnumerable<ObjectInfo> ExtractBaseObjects(SemanticModel semanticModel, IEnumerable<BaseTypeSyntax>? baseRecords, ClassInfo objectInfo)
+    private static void ExtractBaseObjects(SemanticModel semanticModel, IEnumerable<BaseTypeSyntax>? baseRecords, ClassInfo objectInfo)
     {
         if (baseRecords is not null && baseRecords.Any())
         {
@@ -169,13 +167,11 @@ public class ClassAnalyzer
                 var symbol = semanticModel.GetSymbolInfo(baseRecord.Type).Symbol;
                 if (symbol is INamedTypeSymbol namedTypeSymbol && namedTypeSymbol.TypeKind == TypeKind.Interface)
                 {
-                    objectInfo.Implements(namedTypeSymbol.Name);
-                    yield return new InterfaceInfo(namedTypeSymbol.Name);
+                    objectInfo.Implements(TypeSyntaxAnalyzer.GetTypeInfo(baseRecord.Type));
                 }
                 else
                 {
-                    objectInfo.Inherits(baseRecord.Type.ToString());
-                    yield return new ClassInfo(baseRecord.Type.ToString());
+                    objectInfo.Inherits(TypeSyntaxAnalyzer.GetTypeInfo(baseRecord.Type));
                 }
             }
         }
@@ -194,7 +190,7 @@ public class ClassAnalyzer
 
     }
 
-    private IEnumerable<ObjectInfo> AnalyzeClasses(SyntaxNode root, SemanticModel semanticModel)
+    private IEnumerable<ClassInfo> AnalyzeClasses(SyntaxNode root, SemanticModel semanticModel)
     {
         foreach (var classNode in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
         {
@@ -207,10 +203,7 @@ public class ClassAnalyzer
             string className = classNode.Identifier.Text;
             var baseClasses = classNode.BaseList?.Types.OfType<BaseTypeSyntax>();
             var classInfo = new ClassInfo(className);
-            foreach (var baseObject in ExtractBaseObjects(semanticModel, baseClasses, classInfo))
-            {
-                yield return baseObject;
-            }
+            ExtractBaseObjects(semanticModel, baseClasses, classInfo);
             AnalyzeDependenciesOnConstructor(classNode, classInfo);
             AnalyzePropertiesForObjectInfo(classNode.Members, classInfo!);
             AnalyzeFieldForObjectInfo(classNode.Members, classInfo);
