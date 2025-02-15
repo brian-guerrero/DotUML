@@ -31,15 +31,6 @@ public class IndentedStringBuilder
         return this;
     }
 
-    public IndentedStringBuilder AppendJoin(string separator, IEnumerable<string> values)
-    {
-        foreach (var value in values)
-        {
-            _builder.AppendLine($"{new string(' ', IndentLevel * _indentString.Length)}{value}");
-        }
-        return this;
-    }
-
     public IndentedStringBuilder Append(string text)
     {
         var lines = text.Split(Environment.NewLine);

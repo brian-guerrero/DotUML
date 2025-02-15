@@ -7,17 +7,15 @@ namespace DotUML.CLI.Diagram;
 public record TypeInfo(string Name)
 {
     public string SanitizedName => Name.Replace('<', '~').Replace('>', '~');
-
-    public bool IsList => Name.StartsWith("List<");
-
-    public bool IsPrimitive => Name.Replace("?", string.Empty) switch
-    {
-        "int" or "long" or "short" or "byte" or "float" or "double" or "decimal" or "bool" or "char" or "string" => true,
-        _ => false
-    };
-
-    public static explicit operator TypeInfo(string name) => new TypeInfo(name);
 }
+
+public record CreatedType(string Name) : TypeInfo(Name);
+
+public record PrimitiveType(string Name) : TypeInfo(Name);
+
+public record AggregateType(string Name, TypeInfo AggregatedType) : TypeInfo(Name);
+
+public record NullableType(string Name, TypeInfo ElementType) : TypeInfo(Name);
 
 public enum PropertyRelationship
 {
@@ -30,19 +28,16 @@ public record PropertyInfo(string Name, string Visibility, TypeInfo Type)
 {
     public string GetDiagramRepresentation() => $"{Helpers.GetVisibilityCharacter(Visibility)}{Name} : {Type.SanitizedName}";
 
-    public PropertyRelationship Relationship => Type switch
+    public string GetRelationshipRepresentation(string parentName)
     {
-        { IsList: true } => PropertyRelationship.Composition,
-        { IsPrimitive: false } => PropertyRelationship.Aggregation,
-        _ => PropertyRelationship.None
-    };
-
-    public string GetRelationshipRepresentation(string objectName) => Relationship switch
-    {
-        PropertyRelationship.Aggregation => $"{Type.SanitizedName} --o {objectName}",
-        PropertyRelationship.Composition => $"{Type.SanitizedName} --* {objectName}",
-        _ => string.Empty
-    };
+        return Type switch
+        {
+            AggregateType aggregateType when aggregateType.AggregatedType is not PrimitiveType => $"{parentName} o-- {aggregateType.AggregatedType.SanitizedName}",
+            CreatedType => $"{parentName} --> {Type.SanitizedName}",
+            NullableType nullableType when nullableType.ElementType is not PrimitiveType => $"{parentName} --> \"0..1\" {nullableType.ElementType.SanitizedName}",
+            _ => string.Empty
+        };
+    }
 }
 
 public record MethodArgumentInfo(string Name, TypeInfo Type)
@@ -91,7 +86,10 @@ public record EnumInfo(string Name) : ObjectInfo(Name)
         sb.AppendLine($"class {SanitizedName} {{");
         sb.IncreaseIndent();
         sb.AppendLine("<<enumeration>>");
-        sb.AppendJoin("", _values.Select(p => p));
+        foreach (var value in _values)
+        {
+            sb.AppendLine(value);
+        }
         sb.DecreaseIndent();
         sb.AppendLine("}");
         return sb.ToString();
@@ -111,8 +109,14 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
         var sb = new IndentedStringBuilder();
         sb.AppendLine($"class {SanitizedName} {{");
         sb.IncreaseIndent();
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetDiagramRepresentation()));
-        sb.AppendJoin(string.Empty, _methods.Select(m => m.GetDiagramRepresentation()));
+        foreach (var property in _properties)
+        {
+            sb.AppendLine(property.GetDiagramRepresentation());
+        }
+        foreach (var method in _methods)
+        {
+            sb.AppendLine(method.GetDiagramRepresentation());
+        }
         sb.DecreaseIndent();
         sb.AppendLine("}");
         return sb.ToString();
@@ -121,19 +125,28 @@ public record ClassInfo(string Name) : ObjectInfo(Name), IHaveRelationships
     public string GetRelationshipRepresentation()
     {
         var sb = new IndentedStringBuilder();
-        sb.AppendJoin(string.Empty, _dependencies.Select(d => $"{SanitizedName} ..> {d.Type.SanitizedName}"));
-        sb.AppendJoin(string.Empty, _interfaces.Select(i => $"{i} <|.. {SanitizedName}"));
+        foreach (var @interface in _interfaces)
+        {
+            sb.AppendLine($"{@interface} <|.. {SanitizedName}");
+        }
         if (!string.IsNullOrEmpty(BaseClass))
         {
             sb.AppendLine($"{BaseClass} <|-- {SanitizedName}");
         }
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(SanitizedName)));
+        foreach (var property in _properties.Where(p => p.Type is not PrimitiveType))
+        {
+            var relationship = property.GetRelationshipRepresentation(SanitizedName);
+            if (!string.IsNullOrWhiteSpace(relationship))
+            {
+                sb.AppendLine(relationship);
+            }
+        }
         return sb.ToString();
     }
 
     internal void AddDependency(DependencyInfo dependencyInfo)
     {
-        if (dependencyInfo.Type.IsPrimitive) return;
+        if (dependencyInfo.Type is PrimitiveType) return;
         _dependencies.Add(dependencyInfo);
     }
 
@@ -156,8 +169,14 @@ public record InterfaceInfo(string Name) : ObjectInfo(Name), IHaveRelationships
         sb.AppendLine($"class {SanitizedName} {{");
         sb.IncreaseIndent();
         sb.AppendLine("<<interface>>");
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetDiagramRepresentation()));
-        sb.AppendJoin(string.Empty, _methods.Select(m => m.GetDiagramRepresentation()));
+        foreach (var property in _properties)
+        {
+            sb.AppendLine(property.GetDiagramRepresentation());
+        }
+        foreach (var method in _methods)
+        {
+            sb.AppendLine(method.GetDiagramRepresentation());
+        }
         sb.DecreaseIndent();
         sb.AppendLine("}");
         return sb.ToString();
@@ -166,7 +185,14 @@ public record InterfaceInfo(string Name) : ObjectInfo(Name), IHaveRelationships
     public string GetRelationshipRepresentation()
     {
         var sb = new IndentedStringBuilder();
-        sb.AppendJoin(string.Empty, _properties.Select(p => p.GetRelationshipRepresentation(SanitizedName)));
+        foreach (var property in _properties.Where(p => p.Type is not PrimitiveType))
+        {
+            var relationship = property.GetRelationshipRepresentation(SanitizedName);
+            if (!string.IsNullOrWhiteSpace(relationship))
+            {
+                sb.AppendLine(relationship);
+            }
+        }
         return sb.ToString();
     }
 }
@@ -219,12 +245,9 @@ public class Namespaces : IGrouping<string, NamespaceInfo>
             }
         }
 
-        foreach (var obj in this.SelectMany(ns => ns.ObjectInfos.OfType<IHaveRelationships>()))
+        foreach (var relationship in this.SelectMany(ns => ns.ObjectInfos.OfType<IHaveRelationships>().Select(s => s.GetRelationshipRepresentation()).Where(s => !string.IsNullOrWhiteSpace(s))))
         {
-            if (!string.IsNullOrWhiteSpace(obj.GetRelationshipRepresentation()))
-            {
-                sb.Append(obj.GetRelationshipRepresentation().Trim());
-            }
+            sb.Append(relationship.Trim());
         }
         return sb.ToString();
     }

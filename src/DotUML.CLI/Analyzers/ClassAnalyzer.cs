@@ -5,6 +5,7 @@ using DotUML.CLI.Diagram;
 
 using Microsoft.Build.Locator;
 using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.MSBuild;
 using Microsoft.Extensions.Logging;
@@ -113,7 +114,7 @@ public class ClassAnalyzer
 
     private IEnumerable<EnumInfo> AnalyzeEnums(SyntaxNode root, SemanticModel semanticModel)
     {
-        foreach (var e in root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.EnumDeclarationSyntax>())
+        foreach (var e in root.DescendantNodes().OfType<EnumDeclarationSyntax>())
         {
             if (string.IsNullOrEmpty(e.Identifier.Text))
             {
@@ -135,7 +136,7 @@ public class ClassAnalyzer
 
     private IEnumerable<ObjectInfo> AnalyzeRecords(SyntaxNode root, SemanticModel semanticModel)
     {
-        foreach (var recordNode in root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.RecordDeclarationSyntax>())
+        foreach (var recordNode in root.DescendantNodes().OfType<RecordDeclarationSyntax>())
         {
             if (string.IsNullOrEmpty(recordNode.Identifier.Text))
             {
@@ -144,7 +145,7 @@ public class ClassAnalyzer
             }
             _logger.LogInformation($"Found record: {recordNode.Identifier.Text}");
             string className = recordNode.Identifier.Text;
-            var baseRecords = recordNode.BaseList?.Types.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeSyntax>();
+            var baseRecords = recordNode.BaseList?.Types.OfType<BaseTypeSyntax>();
             var recordInfo = new ClassInfo(className);
             foreach (var baseObject in ExtractBaseObjects(semanticModel, baseRecords, recordInfo))
             {
@@ -152,6 +153,7 @@ public class ClassAnalyzer
             }
             AnalyzePropertiesFromRecordConstructor(recordNode.ParameterList, recordInfo);
             AnalyzePropertiesForObjectInfo(recordNode.Members, recordInfo!);
+            AnalyzeFieldForObjectInfo(recordNode.Members, recordInfo);
             AnalyzeMethodsForObjectInfo(recordNode.Members, recordInfo!);
             if (recordInfo is not null)
                 yield return recordInfo;
@@ -183,16 +185,18 @@ public class ClassAnalyzer
     {
         foreach (var parameter in parameterList.Parameters)
         {
+
             var parameterName = parameter.Identifier.Text;
-            var parameterType = parameter.Type.ToString();
-            recordInfo?.AddProperty(new PropertyInfo(parameterName, "public", (Diagram.TypeInfo)parameterType));
+            var parameterType = parameter.Type;
+
+            recordInfo?.AddProperty(new PropertyInfo(parameterName, "public", TypeSyntaxAnalyzer.GetTypeInfo(parameterType)));
         }
 
     }
 
     private IEnumerable<ObjectInfo> AnalyzeClasses(SyntaxNode root, SemanticModel semanticModel)
     {
-        foreach (var classNode in root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ClassDeclarationSyntax>())
+        foreach (var classNode in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
         {
             if (string.IsNullOrEmpty(classNode.Identifier.Text))
             {
@@ -201,7 +205,7 @@ public class ClassAnalyzer
             }
             _logger.LogInformation($"Found class: {classNode.Identifier.Text}");
             string className = classNode.Identifier.Text;
-            var baseClasses = classNode.BaseList?.Types.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.BaseTypeSyntax>();
+            var baseClasses = classNode.BaseList?.Types.OfType<BaseTypeSyntax>();
             var classInfo = new ClassInfo(className);
             foreach (var baseObject in ExtractBaseObjects(semanticModel, baseClasses, classInfo))
             {
@@ -209,6 +213,7 @@ public class ClassAnalyzer
             }
             AnalyzeDependenciesOnConstructor(classNode, classInfo);
             AnalyzePropertiesForObjectInfo(classNode.Members, classInfo!);
+            AnalyzeFieldForObjectInfo(classNode.Members, classInfo);
             AnalyzeMethodsForObjectInfo(classNode.Members, classInfo!);
             if (classInfo is not null)
                 yield return classInfo;
@@ -216,49 +221,61 @@ public class ClassAnalyzer
         }
     }
 
+    private void AnalyzeFieldForObjectInfo(SyntaxList<MemberDeclarationSyntax> members, ClassInfo classInfo)
+    {
+        var fields = members.OfType<FieldDeclarationSyntax>();
+        foreach (var field in fields)
+        {
+            var fieldName = field.Declaration.Variables.First().Identifier.Text;
+            var fieldType = field.Declaration.Type;
+            var accessibility = field.Modifiers.ToString();
+            classInfo.AddProperty(new PropertyInfo(fieldName, accessibility, TypeSyntaxAnalyzer.GetTypeInfo(fieldType)));
+        }
+    }
+
     private void AnalyzeDependenciesOnConstructor(ClassDeclarationSyntax classNode, ClassInfo? classInfo)
     {
-        var constructors = classNode.Members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.ConstructorDeclarationSyntax>();
+        var constructors = classNode.Members.OfType<ConstructorDeclarationSyntax>();
         foreach (var constructor in constructors)
         {
             foreach (var parameter in constructor.ParameterList.Parameters)
             {
-                var parameterType = parameter.Type.ToString();
-                classInfo?.AddDependency(new DependencyInfo((Diagram.TypeInfo)parameterType));
+                var parameterType = parameter.Type;
+                classInfo?.AddDependency(new DependencyInfo(TypeSyntaxAnalyzer.GetTypeInfo(parameterType)));
             }
         }
     }
 
-    private void AnalyzePropertiesForObjectInfo(SyntaxList<Microsoft.CodeAnalysis.CSharp.Syntax.MemberDeclarationSyntax> members, ObjectInfo objectInformation)
+    private void AnalyzePropertiesForObjectInfo(SyntaxList<MemberDeclarationSyntax> members, ObjectInfo objectInformation)
     {
-        var properties = members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.PropertyDeclarationSyntax>();
+        var properties = members.OfType<PropertyDeclarationSyntax>();
         foreach (var property in properties)
         {
             _logger.LogInformation($"Found property: {property.Identifier.Text}");
             var propertyName = property.Identifier.Text;
-            var propertyType = property.Type.ToString();
+            var propertyType = property.Type;
             var accessibility = property.Modifiers.ToString();
             _logger.LogInformation($"Property accessibility: {accessibility}");
-            objectInformation.AddProperty(new PropertyInfo(propertyName, accessibility, (Diagram.TypeInfo)propertyType));
+            objectInformation.AddProperty(new PropertyInfo(propertyName, accessibility, TypeSyntaxAnalyzer.GetTypeInfo(propertyType)));
         }
     }
 
-    private void AnalyzeMethodsForObjectInfo(SyntaxList<Microsoft.CodeAnalysis.CSharp.Syntax.MemberDeclarationSyntax> members, ObjectInfo objectInformation)
+    private void AnalyzeMethodsForObjectInfo(SyntaxList<MemberDeclarationSyntax> members, ObjectInfo objectInformation)
     {
-        var methods = members.OfType<Microsoft.CodeAnalysis.CSharp.Syntax.MethodDeclarationSyntax>();
+        var methods = members.OfType<MethodDeclarationSyntax>();
         foreach (var method in methods)
         {
             _logger.LogInformation($"Found property: {method.Identifier.Text}");
             var methodName = method.Identifier.Text;
-            var returnType = method.ReturnType.ToString();
+            var returnType = method.ReturnType;
             var accessibility = method.Modifiers.ToString();
             _logger.LogInformation($"Property accessibility: {accessibility}");
-            var methodInfo = new MethodInfo(methodName, accessibility, (Diagram.TypeInfo)returnType);
+            var methodInfo = new MethodInfo(methodName, accessibility, TypeSyntaxAnalyzer.GetTypeInfo(returnType));
             foreach (var parameter in method.ParameterList.Parameters)
             {
                 var parameterName = parameter.Identifier.Text;
-                var parameterType = parameter.Type.ToString();
-                methodInfo.AddArgument(new MethodArgumentInfo(parameterName, (Diagram.TypeInfo)parameterType));
+                var parameterType = parameter.Type;
+                methodInfo.AddArgument(new MethodArgumentInfo(parameterName, TypeSyntaxAnalyzer.GetTypeInfo(parameterType)));
             }
             objectInformation.AddMethod(methodInfo);
         }
@@ -266,7 +283,7 @@ public class ClassAnalyzer
 
     private IEnumerable<InterfaceInfo> AnalyzeInterfaces(SyntaxNode root)
     {
-        foreach (var interfaceNode in root.DescendantNodes().OfType<Microsoft.CodeAnalysis.CSharp.Syntax.InterfaceDeclarationSyntax>())
+        foreach (var interfaceNode in root.DescendantNodes().OfType<InterfaceDeclarationSyntax>())
         {
             if (string.IsNullOrEmpty(interfaceNode.Identifier.Text))
             {
